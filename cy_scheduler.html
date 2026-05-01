@@ -770,9 +770,14 @@ const Storage = {
     try {
       const raw = localStorage.getItem(STORAGE_STATE);
       if (raw) return JSON.parse(raw);
-      // Migrate from v2
+      // Migrate from v2 and persist immediately so the new key takes over.
       const legacy = localStorage.getItem(LEGACY_STATE);
-      if (legacy) return migrateV2(JSON.parse(legacy));
+      if (legacy) {
+        const migrated = migrateV2(JSON.parse(legacy));
+        try { localStorage.setItem(STORAGE_STATE, JSON.stringify(migrated)); }
+        catch (e) {}
+        return migrated;
+      }
       return null;
     } catch (e) { return null; }
   },
