@@ -1,0 +1,2079 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>CY Schedule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F5F0E8;
+    --paper-warm: #EDE5D6;
+    --paper-warmer: #E5DBC5;
+    --card: #FFFFFF;
+    --card-tint: #FBF7EF;
+    --ink: #1A1614;
+    --ink-soft: #4A423B;
+    --ink-faint: #8A7F73;
+    --rule: #D8CDB8;
+    --rule-soft: #EAE0CC;
+
+    --accent: #1E2438;
+    --accent-soft: #3A4259;
+    --terra: #A0522D;
+
+    --status-ok: #2E5934;
+    --status-ok-bg: #DCEAD2;
+    --status-warn: #8C5A1C;
+    --status-warn-bg: #FCE8C2;
+    --status-bad: #8B2914;
+    --status-bad-bg: #F4D6CD;
+    --status-info: #2A4A6B;
+    --status-info-bg: #D6E1EC;
+
+    --shadow-sm: 0 1px 2px rgba(26,22,20,.06);
+    --shadow-md: 0 2px 8px rgba(26,22,20,.08);
+    --shadow-lg: 0 4px 18px rgba(26,22,20,.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 90% -10%, rgba(160,82,45,.05), transparent 60%),
+      radial-gradient(900px 500px at -10% 100%, rgba(30,36,56,.04), transparent 60%);
+    min-height: 100vh;
+  }
+  body[dir="rtl"] { font-family: 'Tajawal', 'Geist', sans-serif; }
+  .ar { font-family: 'Tajawal', sans-serif; }
+  .mono { font-family: 'Geist Mono', monospace; font-feature-settings: "tnum" 1; }
+  .serif { font-family: 'Fraunces', serif; }
+
+  /* ============== TOP TOOLBAR ============== */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    margin: 24px 32px 0;
+    box-shadow: var(--shadow-md);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .brand-logo {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    color: var(--paper);
+    display: grid; place-items: center;
+    border-radius: 10px;
+    font-family: 'Geist Mono', monospace;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: .05em;
+  }
+  .brand-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .15s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--ink); background: var(--card-tint); }
+  .btn:active { transform: translateY(1px); }
+  .btn .ic { font-size: 14px; opacity: .7; }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { background: #2A3050; border-color: #2A3050; }
+  .btn-ghost { border-color: transparent; color: var(--ink-soft); }
+  .btn-ghost:hover { background: var(--paper-warm); border-color: var(--rule); }
+  .btn-sm { padding: 5px 9px; font-size: 12px; }
+  .btn-icon { padding: 6px; width: 30px; height: 30px; justify-content: center; }
+  body[dir="rtl"] .btn { font-family: 'Tajawal', sans-serif; }
+
+  .menu-wrap { position: relative; }
+  .menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    min-width: 200px;
+    padding: 4px;
+    display: none;
+    z-index: 100;
+  }
+  body[dir="rtl"] .menu { right: auto; left: 0; }
+  .menu.open { display: block; }
+  .menu button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  body[dir="rtl"] .menu button { text-align: right; }
+  .menu button:hover { background: var(--paper-warm); }
+  .menu button .hint {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: .05em;
+  }
+
+  /* ============== TAB NAV ============== */
+  .tabs-wrap {
+    margin: 16px 32px 0;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: var(--shadow-sm);
+  }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    flex: 0 0 auto;
+    padding: 9px 18px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--ink-soft);
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  body[dir="rtl"] .tab { font-family: 'Tajawal', sans-serif; }
+  .tab:hover { background: var(--paper-warm); }
+  .tab.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .tab .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+  }
+  .tab.active .dot { background: var(--paper); }
+  .tab .badge-count {
+    background: rgba(0,0,0,.08);
+    color: var(--ink-soft);
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 99px;
+  }
+  .tab.active .badge-count { background: rgba(255,255,255,.2); color: white; }
+
+  /* ============== MAIN CONTENT ============== */
+  main { padding: 24px 32px 60px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .panel-title-block { display: flex; gap: 14px; align-items: flex-start; }
+  .panel-num {
+    width: 38px; height: 38px;
+    background: var(--ink);
+    color: var(--paper);
+    display: grid; place-items: center;
+    border-radius: 8px;
+    font-family: 'Geist Mono', monospace;
+    font-weight: 600;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+  }
+  body[dir="rtl"] .panel-title { font-family: 'Tajawal', sans-serif; font-weight: 700; }
+  .panel-sub {
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+  .panel-stat {
+    text-align: right;
+    color: var(--ink-faint);
+    font-size: 12px;
+  }
+  body[dir="rtl"] .panel-stat { text-align: left; }
+  .panel-stat .num {
+    font-family: 'Fraunces', serif;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--ink);
+    display: block;
+    line-height: 1;
+    margin-top: 4px;
+  }
+
+  /* ============== BLOCK CARDS ============== */
+  .level-section {
+    margin-top: 28px;
+  }
+  .level-section:first-child { margin-top: 0; }
+  .level-section .block-card { margin-bottom: 14px; }
+  .level-section .block-card:last-child { margin-bottom: 0; }
+
+  .block-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-sm);
+  }
+  .block-card.first-of-level {
+    border-top: 3px solid var(--accent);
+  }
+  .block-head {
+    background: var(--paper-warm);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .block-tag {
+    width: 40px; height: 28px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    display: grid; place-items: center;
+    font-family: 'Geist Mono', monospace;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  .block-title-wrap { flex: 1; min-width: 0; }
+  .block-title {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  body[dir="rtl"] .block-title { font-family: 'Tajawal', sans-serif; font-weight: 700; }
+  .block-subtitle {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 2px;
+    font-weight: 400;
+  }
+  .block-remove {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--ink-faint);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .block-remove:hover {
+    background: var(--status-bad-bg);
+    color: var(--status-bad);
+    border-color: var(--status-bad);
+  }
+  .level-restore {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: var(--card-tint);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .level-restore-lbl {
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: .05em;
+  }
+  body[dir="rtl"] .level-restore-lbl { font-family: 'Tajawal', sans-serif; }
+  .restore-block { font-family: inherit; }
+  .block-meta {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .block-meta strong { color: var(--ink); font-weight: 600; }
+  .block-meta .status-ok { color: var(--status-ok); font-weight: 600; }
+  .block-meta .status-warn { color: var(--status-warn); font-weight: 600; }
+  .block-meta .status-bad { color: var(--status-bad); font-weight: 600; }
+
+  .level-group {
+    padding: 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .level-group:last-of-type { border-bottom: none; }
+  .level-group-head {
+    padding: 8px 20px;
+    background: var(--card-tint);
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border-bottom: 1px solid var(--rule-soft);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ============== SCHEDULE TABLE ============== */
+  table.sched {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.sched thead th {
+    background: var(--card);
+    color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  body[dir="rtl"] table.sched thead th { text-align: right; }
+  table.sched tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px dashed var(--rule-soft);
+    vertical-align: middle;
+  }
+  table.sched tbody tr:last-child td { border-bottom: none; }
+  table.sched tbody tr:hover { background: var(--card-tint); }
+  table.sched tbody tr.has-conflict { background: #FCEEEA; }
+
+  td.code-cell {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--ink);
+    width: 100px;
+  }
+  td.course-cell { min-width: 200px; }
+  .course-name {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.35;
+  }
+  td.type-cell { width: 80px; }
+  td.day-cell { width: 80px; font-family: 'Geist Mono', monospace; font-size: 12px; }
+  td.time-cell { width: 130px; font-family: 'Geist Mono', monospace; font-size: 12px; }
+  td.instr-cell { width: 170px; }
+  td.status-cell { width: 140px; }
+  td.actions-cell { width: 32px; }
+  .empty-marker {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--status-warn);
+    font-weight: 500;
+  }
+
+  /* badges */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .pill.type {
+    background: var(--paper-warm);
+    color: var(--ink-soft);
+    border-color: var(--rule-soft);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 11.5px;
+  }
+  .pill.status-scheduled { background: var(--status-ok-bg); color: var(--status-ok); }
+  .pill.status-warn { background: var(--status-warn-bg); color: var(--status-warn); }
+  .pill.status-bad { background: var(--status-bad-bg); color: var(--status-bad); }
+  .pill.status-info { background: var(--status-info-bg); color: var(--status-info); }
+  .pill .dot {
+    width: 5px; height: 5px;
+    background: currentColor;
+    border-radius: 50%;
+  }
+
+  /* editable selects */
+  .edit {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 4px 22px 4px 8px;
+    border: 1px solid var(--rule-soft);
+    background: var(--card);
+    border-radius: 6px;
+    color: var(--ink);
+    width: 100%;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%238A7F73' fill='none' stroke-width='1.5'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+  }
+  body[dir="rtl"] .edit {
+    background-position: left 6px center;
+    padding: 4px 8px 4px 22px;
+  }
+  .edit.empty { border-style: dashed; border-color: var(--status-warn); background-color: #FEFAEB; }
+  .edit.conflict { border-color: var(--status-bad); background-color: #FCEEEA; color: var(--status-bad); font-weight: 600; }
+  .edit:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .edit.mono { font-family: 'Geist Mono', monospace; }
+  .edit.ar { font-family: 'Tajawal', sans-serif; font-size: 12px; }
+
+  /* Add Section row */
+  .add-section-row {
+    padding: 10px 20px;
+    background: var(--card-tint);
+    border-top: 1px dashed var(--rule);
+    color: var(--ink-faint);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .add-section-row:hover { background: var(--paper-warm); color: var(--ink); }
+
+  /* Online special row */
+  .online-special {
+    background: var(--status-ok-bg);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-top: 1px solid var(--rule);
+    flex-wrap: wrap;
+    font-size: 12.5px;
+  }
+  .online-special .code {
+    font-family: 'Geist Mono', monospace;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .online-special .desc {
+    flex: 1;
+    color: var(--ink-soft);
+  }
+  .online-special .ar { color: var(--status-ok); }
+  .online-special .meta { font-size: 11px; color: var(--ink-faint); display: inline-flex; gap: 12px; }
+  .online-special .ok-tag { color: var(--status-ok); font-weight: 600; }
+
+  /* ============== RULES GRID (CONFLICTS PANEL) ============== */
+  .rules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .rule-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+  }
+  .rule-card.span-2 { grid-column: span 2; }
+  .rule-card .rule-tag {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 99px;
+    letter-spacing: .04em;
+  }
+  body[dir="rtl"] .rule-card .rule-tag { right: auto; left: 18px; }
+  .rule-card .rule-tag.green { background: var(--status-ok-bg); color: var(--status-ok); }
+  .rule-card .rule-tag.red { background: var(--status-bad-bg); color: var(--status-bad); }
+  .rule-card .rule-tag.amber { background: var(--status-warn-bg); color: var(--status-warn); }
+  .rule-card .rule-tag.gray { background: var(--rule-soft); color: var(--ink-soft); }
+
+  .rule-card h3 {
+    font-family: 'Geist', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    margin-right: 70px;
+  }
+  body[dir="rtl"] .rule-card h3 { margin-right: 0; margin-left: 70px; font-family: 'Tajawal', sans-serif; }
+  .rule-card p {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  .live-issues {
+    margin-top: 24px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .live-issues-head {
+    padding: 12px 18px;
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .live-issues-head h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  body[dir="rtl"] .live-issues-head h3 { font-family: 'Tajawal', sans-serif; }
+  .issue-row {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--rule-soft);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 12.5px;
+  }
+  .issue-row:last-child { border-bottom: none; }
+  .issue-row .issue-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .issue-row .issue-tag.r5 { background: var(--status-bad-bg); color: var(--status-bad); }
+  .issue-row .issue-tag.r6 { background: var(--status-warn-bg); color: var(--status-warn); }
+  .issue-row .issue-tag.r10 { background: var(--status-info-bg); color: var(--status-info); }
+  .issue-row .issue-meta {
+    color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+  }
+  .issue-row .issue-msg { flex: 1; color: var(--ink-soft); }
+  .empty-state {
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--status-ok);
+    font-style: italic;
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+  }
+
+  /* ============== VERSIONS PANEL ============== */
+  .versions-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 22px;
+  }
+  .versions-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .versions-card-head {
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .versions-card-head h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  body[dir="rtl"] .versions-card-head h3 { font-family: 'Tajawal', sans-serif; font-weight: 700; }
+  .versions-card-head p {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+  table.versions {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table.versions th {
+    background: var(--paper-warm);
+    padding: 10px 16px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: left;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  body[dir="rtl"] table.versions th { text-align: right; }
+  table.versions td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule-soft);
+    font-size: 13px;
+    vertical-align: top;
+  }
+  table.versions tr:last-child td { border-bottom: none; }
+  table.versions td.v {
+    font-family: 'Geist Mono', monospace;
+    font-weight: 600;
+    width: 80px;
+  }
+  table.versions td.dt { font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--ink-faint); width: 110px; }
+  table.versions td.actions { width: 60px; text-align: right; }
+  .versions-foot {
+    padding: 12px 22px;
+    background: var(--card-tint);
+    border-top: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  /* takeaways panel */
+  .takeaways {
+    padding: 22px;
+  }
+  .takeaways h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  body[dir="rtl"] .takeaways h3 { font-family: 'Tajawal', sans-serif; }
+  .takeaway-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .takeaway-item:last-of-type { border-bottom: none; }
+  .takeaway-icon {
+    width: 32px; height: 32px;
+    background: var(--paper-warm);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+  .takeaway-item h4 { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .takeaway-item p { font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+
+  .goal-banner {
+    margin-top: 18px;
+    padding: 16px 18px;
+    background: var(--status-ok-bg);
+    border-radius: 10px;
+    display: flex;
+    gap: 14px;
+    border: 1px solid #C5D8B5;
+  }
+  .goal-banner .icon { font-size: 22px; }
+  .goal-banner h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--status-ok);
+    margin-bottom: 3px;
+  }
+  body[dir="rtl"] .goal-banner h4 { font-family: 'Tajawal', sans-serif; }
+  .goal-banner p { font-size: 12px; color: var(--status-ok); opacity: .85; }
+
+  /* ============== INSTRUCTORS / COURSES TABLES ============== */
+  table.list {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  table.list thead th {
+    background: var(--paper-warm);
+    padding: 12px 16px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: left;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  body[dir="rtl"] table.list thead th { text-align: right; }
+  table.list tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule-soft);
+    font-size: 13px;
+  }
+  table.list tbody tr:last-child td { border-bottom: none; }
+  table.list tbody tr:hover { background: var(--card-tint); }
+
+  /* load meter */
+  .loadmeter {
+    width: 140px;
+    height: 8px;
+    background: var(--rule-soft);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+  }
+  .loadmeter .fill {
+    height: 100%;
+    background: var(--status-ok);
+    border-radius: 99px;
+    transition: width .3s;
+  }
+  .loadmeter.under .fill { background: var(--status-warn); }
+  .loadmeter.over .fill { background: var(--status-bad); }
+  .load-text { font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 500; }
+
+  /* ============== TOAST ============== */
+  #toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: var(--shadow-lg);
+    transform: translateX(120%);
+    transition: transform .3s ease;
+    z-index: 200;
+    max-width: 360px;
+  }
+  body[dir="rtl"] #toast { right: auto; left: 24px; transform: translateX(-120%); }
+  #toast.show { transform: translateX(0) !important; }
+  #toast.success { background: var(--status-ok); }
+  #toast.error { background: var(--status-bad); }
+
+  /* ============== RESPONSIVE ============== */
+  @media (max-width: 1100px) {
+    .toolbar, .tabs-wrap, main { margin-left: 16px; margin-right: 16px; padding-left: 16px; padding-right: 16px; }
+    .rules-grid { grid-template-columns: 1fr; }
+    .rule-card.span-2 { grid-column: span 1; }
+    .versions-grid { grid-template-columns: 1fr; }
+    .panel-title { font-size: 22px; }
+  }
+  @media (max-width: 700px) {
+    .toolbar { flex-direction: column; gap: 12px; align-items: stretch; }
+    .toolbar-actions { flex-wrap: wrap; }
+    .panel-head { flex-direction: column; }
+    .panel-stat { text-align: left; }
+    table.sched { font-size: 12px; }
+    td.course-cell { min-width: 140px; }
+  }
+
+  /* ============== PRINT ============== */
+  @media print {
+    @page { margin: 1.2cm; size: A4 landscape; }
+    body { background: white; padding: 0; font-size: 11px; }
+    .toolbar, .tabs-wrap, .panel-head .panel-stat, .add-section-row,
+    td.actions-cell, th.th-actions, #toast, .takeaways, .goal-banner,
+    .versions-foot { display: none !important; }
+    main { padding: 0; margin: 0; }
+    .panel { display: block !important; page-break-after: always; }
+    .panel:last-child { page-break-after: auto; }
+    .block-card, .versions-card, table.list, .rule-card, .live-issues {
+      box-shadow: none !important;
+      border: 1px solid #999 !important;
+      page-break-inside: avoid;
+    }
+    .edit { border: none !important; padding: 2px !important; background: transparent !important; }
+    .edit::-ms-expand { display: none; }
+    .edit { background-image: none !important; padding-right: 2px !important; }
+    .panel-title { font-family: 'Fraunces', serif; }
+    .print-only { display: block !important; }
+  }
+  .print-only { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ===================== TOOLBAR ===================== -->
+<div class="toolbar">
+  <div class="brand">
+    <div class="brand-logo">CY</div>
+    <div>
+      <div class="brand-title" data-tr="brand">CY Schedule</div>
+      <div class="brand-sub" data-tr="brand_sub">Year 26/27 · Cybersecurity Dept</div>
+    </div>
+  </div>
+  <div class="toolbar-actions">
+    <input type="file" id="file-import" accept=".csv,.json,.tsv" style="display:none" />
+    <button class="btn" id="btn-import"><span class="ic">↑</span><span data-tr="import">Import</span></button>
+    <div class="menu-wrap">
+      <button class="btn" id="btn-export"><span class="ic">↓</span><span data-tr="export">Export</span><span style="opacity:.5">▾</span></button>
+      <div class="menu" id="menu-export">
+        <button data-fmt="csv"><span data-tr="export_csv">Download CSV</span><span class="hint">.csv</span></button>
+        <button data-fmt="tsv"><span data-tr="export_tsv">Download TSV</span><span class="hint">.tsv</span></button>
+        <button data-fmt="tsv-clip"><span data-tr="copy_tsv">Copy TSV to clipboard</span><span class="hint">⌘V</span></button>
+        <button data-fmt="json"><span data-tr="export_json">Download JSON</span><span class="hint">.json</span></button>
+      </div>
+    </div>
+    <button class="btn" id="btn-print"><span class="ic">⎙</span><span data-tr="print">Print/PDF</span></button>
+    <button class="btn" id="btn-lang">العربية</button>
+  </div>
+</div>
+
+<!-- ===================== TABS ===================== -->
+<div class="tabs-wrap">
+  <div class="tabs" role="tablist">
+    <button class="tab" data-tab="versions"><span class="dot"></span><span data-tr="tab_versions">Versions</span></button>
+    <button class="tab" data-tab="instructors"><span class="dot"></span><span data-tr="tab_instructors">Instructors</span></button>
+    <button class="tab" data-tab="courses"><span class="dot"></span><span data-tr="tab_courses">Courses</span></button>
+    <button class="tab" data-tab="conflicts"><span class="dot"></span><span data-tr="tab_conflicts">Conflicts</span><span class="badge-count" id="cnt-conflicts">0</span></button>
+    <button class="tab active" data-tab="schedule"><span class="dot"></span><span data-tr="tab_schedule">Schedule</span></button>
+  </div>
+</div>
+
+<!-- ===================== PANELS ===================== -->
+<main>
+  <section class="panel active" data-panel="schedule" id="panel-schedule"></section>
+  <section class="panel" data-panel="conflicts" id="panel-conflicts"></section>
+  <section class="panel" data-panel="versions" id="panel-versions"></section>
+  <section class="panel" data-panel="instructors" id="panel-instructors"></section>
+  <section class="panel" data-panel="courses" id="panel-courses"></section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ==================== EMBEDDED DATA ====================
+const DATA = {"rows": [{"row": 4, "level": "الثالث", "code": "ELPR-220", "name": "الكتابة الأكاديمية الإنجليزية", "type": "عن بعد", "credits": 2, "days": "U", "b1_time": "1900-2040", "b1_instr": "", "b1_room": "", "b2_time": "1900-2040", "b2_instr": "", "b2_room": ""}, {"row": 5, "level": "الثالث", "code": "CLAL-100", "name": "مهارات لغوية - 1", "type": "عن بعد", "credits": 2, "days": "T", "b1_time": "1900-2040", "b1_instr": "", "b1_room": "", "b2_time": "1900-2040", "b2_instr": "", "b2_room": ""}, {"row": 6, "level": "الثالث", "code": "CECS-217", "name": "تنظيم وبنيان الحاسب", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "0930-1050", "b1_instr": "", "b1_room": "", "b2_time": "0800-0920", "b2_instr": "", "b2_room": ""}, {"row": 7, "level": "الثالث", "code": "CECS-217", "name": "تنظيم وبنيان الحاسب", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 8, "level": "الثالث", "code": "SCMT-221", "name": "جبر خطي", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "1100-1220", "b1_instr": "", "b1_room": "", "b2_time": "1300-1450", "b2_instr": "", "b2_room": ""}, {"row": 9, "level": "الثالث", "code": "SCST-210", "name": "إحصاء عام", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "1300-1450", "b1_instr": "", "b1_room": "", "b2_time": "1100-1220", "b2_instr": "", "b2_room": ""}, {"row": 10, "level": "الثالث", "code": "CECY-211", "name": "البرمجة الآمنة", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "0800-0920", "b1_instr": "أ.شهزاد قمر", "b1_room": "", "b2_time": "0930-1050", "b2_instr": "أ.شهزاد قمر", "b2_room": ""}, {"row": 11, "level": "الثالث", "code": "CECY-211", "name": "البرمجة الآمنة", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 12, "level": "الرابع (الدوليين)", "code": "ISLM-100", "name": "ثقافة إسلامية - 1", "type": "عن بعد", "credits": 2, "days": "M..W", "b1_time": "900-1040", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 13, "level": "الرابع (الدوليين)", "code": "CECS-284", "name": "نظم تشغيل", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 14, "level": "الرابع (الدوليين)", "code": "CECS-284", "name": "نظم تشغيل", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 15, "level": "الرابع (الدوليين)", "code": "CECS-282", "name": "تراكيب بيانات", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "0930-1050", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 16, "level": "الرابع (الدوليين)", "code": "CECS-282", "name": "تراكيب بيانات", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 17, "level": "الرابع (الدوليين)", "code": "CECN-382", "name": "مقدمة شبكات الحاسب", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 18, "level": "الرابع (الدوليين)", "code": "CECN-382", "name": "مقدمة شبكات الحاسب", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 19, "level": "الرابع (الدوليين)", "code": "CECY-221", "name": "هندسة البرمجيات الآمنة", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 20, "level": "الرابع (الدوليين)", "code": "CECY-221", "name": "هندسة البرمجيات الآمنة", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 21, "level": "الرابع (الدوليين)", "code": "ISLM-200", "name": "ثقافة إسلامية - 2", "type": "عن بعد", "credits": 2, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 22, "level": "الخامس", "code": "CEAI-300", "name": "مقدمة في الذكاء الاصطناعي", "type": "عن بعد", "credits": 2, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 23, "level": "الخامس", "code": "CECY-381", "name": "أساسيات الأمن السيبراني", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "1100-1220", "b1_instr": "", "b1_room": "", "b2_time": "0930-1050", "b2_instr": "", "b2_room": ""}, {"row": 24, "level": "الخامس", "code": "CECY-381", "name": "أساسيات الأمن السيبراني", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 25, "level": "الخامس", "code": "CECY-311", "name": "تطوير وأمن الويب", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "1300-1450", "b1_instr": "د.محمد الاحمدي", "b1_room": "", "b2_time": "1100-1220", "b2_instr": "د.محمد الاحمدي", "b2_room": ""}, {"row": 26, "level": "الخامس", "code": "CECY-311", "name": "تطوير وأمن الويب", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 27, "level": "الخامس", "code": "CECS-382", "name": "تصميم وتحليل الخوارزميات", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "0800-0920", "b1_instr": "", "b1_room": "", "b2_time": "0800-0920", "b2_instr": "", "b2_room": ""}, {"row": 28, "level": "الخامس", "code": "CECY-312", "name": "سياسات وقوانين الأمن السيبراني", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "0930-1050", "b1_instr": "", "b1_room": "", "b2_time": "1300-1450", "b2_instr": "", "b2_room": ""}, {"row": 29, "level": "السادس (الدوليين)", "code": "SLBR-111", "name": "الثقافة القانونية", "type": "عن بعد", "credits": 2, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 30, "level": "السادس (الدوليين)", "code": "CECY-321", "name": "تشفير", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 31, "level": "السادس (الدوليين)", "code": "CECY-321", "name": "تشفير", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 32, "level": "السادس (الدوليين)", "code": "CECY-322", "name": "إدارة نظم", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 33, "level": "السادس (الدوليين)", "code": "CECY-322", "name": "إدارة نظم", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 34, "level": "السادس (الدوليين)", "code": "CECY-323", "name": "أمن الشبكات", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 35, "level": "السادس (الدوليين)", "code": "CECY-323", "name": "أمن الشبكات", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 36, "level": "السادس (الدوليين)", "code": "CECY-324", "name": "أمن قواعد البيانات", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 37, "level": "السادس (الدوليين)", "code": "CECY-324", "name": "أمن قواعد البيانات", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 38, "level": "السابع", "code": "ISLM-300", "name": "ثقافة إسلامية - 3", "type": "عن بعد", "credits": 2, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 39, "level": "السابع", "code": "BUBA-100", "name": "الابتكار وريادة الأعمال", "type": "عن بعد", "credits": 2, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 40, "level": "السابع", "code": "CECY-411", "name": "هندسة ومعمارية الأمن السيبراني", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 41, "level": "السابع", "code": "CECY-411", "name": "هندسة ومعمارية الأمن السيبراني", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 42, "level": "السابع", "code": "CECY-481", "name": "أمن البرمجيات", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 43, "level": "السابع", "code": "CECY-481", "name": "أمن البرمجيات", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 44, "level": "السابع", "code": "XXXX", "name": "مقرر حر - 1", "type": "عن بعد", "credits": 2, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 45, "level": "السابع", "code": "CECY-412", "name": "أمن أنظمة التحكم الصناعية", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 46, "level": "السابع", "code": "CECY-412", "name": "أمن أنظمة التحكم الصناعية", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 47, "level": "التاسع", "code": "CCCY412", "name": "تحليل واختبار الثغرات", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 48, "level": "التاسع", "code": "CCCY412", "name": "تحليل واختبار الثغرات", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 49, "level": "التاسع", "code": "CCCY413", "name": "عمليات الامن السيبراني", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 50, "level": "التاسع", "code": "CCCY413", "name": "عمليات الامن السيبراني", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 51, "level": "التاسع", "code": "CCCY-433", "name": "تدقيق أمن المعلومات", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 52, "level": "التاسع", "code": "CCCY-433", "name": "تدقيق أمن المعلومات", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 53, "level": "التاسع", "code": "CCCY435", "name": "مواضيع متقدمة في الأمن السيبراني", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 54, "level": "التاسع", "code": "CCCY435", "name": "مواضيع متقدمة في الأمن السيبراني", "type": "عملي", "credits": 1, "days": "", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 55, "level": "التاسع", "code": "CCCY411", "name": "مشروع تخرج 1", "type": "نظري", "credits": 2, "days": "U..T", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 56, "level": "التاسع", "code": "CCCY411", "name": "مشروع تخرج 1", "type": "نظري", "credits": 2, "days": "U..T", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 57, "level": "التاسع", "code": "CCCY411", "name": "مشروع تخرج 1", "type": "نظري", "credits": 2, "days": "U..T", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 58, "level": "التاسع", "code": "CCCY411", "name": "مشروع تخرج 1", "type": "نظري", "credits": 2, "days": "U..T", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 59, "level": "التاسع", "code": "CCCY411", "name": "مشروع تخرج 1", "type": "نظري", "credits": 2, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 60, "level": "التاسع", "code": "CCCY411", "name": "مشروع تخرج 1", "type": "نظري", "credits": 2, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 61, "level": "التاسع", "code": "CCCY411", "name": "مشروع تخرج 1", "type": "نظري", "credits": 2, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 62, "level": "التاسع", "code": "CCCY411", "name": "مشروع تخرج 1", "type": "نظري", "credits": 2, "days": "M..W", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 63, "level": "قسم هندسة البرمجيات", "code": "CECY 482", "name": "هندسة أمن البرمجيات", "type": "نظري", "credits": 3, "days": "U..T", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 64, "level": "قسم هندسة البرمجيات", "code": "CECY 482", "name": "هندسة أمن البرمجيات", "type": "عملي", "credits": 1, "days": "U", "b1_time": "", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 65, "level": "قسم الذكاء الاصطناعي", "code": "CECY 382", "name": "اساسيات الامن السيبراني", "type": "نظري", "credits": 3, "days": "M..W", "b1_time": "1100-1220", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}, {"row": 66, "level": "قسم الذكاء الاصطناعي", "code": "CECY 382", "name": "اساسيات الامن السيبراني", "type": "عملي", "credits": 1, "days": "W", "b1_time": "1700-1840", "b1_instr": "", "b1_room": "", "b2_time": "", "b2_instr": "", "b2_room": ""}], "instructors": ["أ.د. أحمد الغامدي", "أ.د. محمد إبراهيم", "د. يوسف باخدلقي", "أ.د. عيسى السلمي", "د.فيصل السبيعي", "د.شهزاد سليم", "د.عادل الشمراني", "د.طلال الحربي", "د.محمد الاحمدي", "د.نايف الزهراني", "د.محمد كمران", "د.مالك نجم", "د.عادل البشري", "أ.شهزاد قمر"]};
+
+// ==================== TIME / DAY DEFINITIONS ====================
+const LECTURE_SLOTS = [
+  { code: '0800-0920', start:  480, end:  560 },
+  { code: '0930-1050', start:  570, end:  650 },
+  { code: '1100-1220', start:  660, end:  740 },
+  { code: '1300-1450', start:  780, end:  890 },
+  { code: '1500-1620', start:  900, end:  980 },
+  { code: '1900-2040', start: 1140, end: 1240 },
+];
+const LAB_SLOTS = [
+  { code: '900-1040',  start:  540, end:  640 },
+  { code: '1100-1240', start:  660, end:  760 },
+  { code: '1300-1440', start:  780, end:  880 },
+  { code: '1500-1640', start:  900, end: 1000 },
+  { code: '1700-1840', start: 1020, end: 1120 },
+  { code: '2100-2240', start: 1260, end: 1360 },
+];
+const ALL_SLOTS = [...LECTURE_SLOTS, ...LAB_SLOTS];
+const DAY_OPTIONS_THEORY = ['M..W', 'U..T'];
+const DAY_OPTIONS_PRAC   = ['U', 'M', 'T', 'W', 'R'];
+const DAY_OPTIONS_ONLINE = ['M..W', 'U..T', 'U', 'M', 'T', 'W', 'R'];
+const DAY_EXPAND = {
+  'M..W': ['M','W'], 'U..T': ['U','T'],
+  'U':['U'],'M':['M'],'T':['T'],'W':['W'],'R':['R']
+};
+
+// ==================== TRANSLATIONS ====================
+const TR = {
+  en: {
+    brand: 'CY Schedule',
+    brand_sub: 'Year 26/27 · Cybersecurity Dept',
+    import: 'Import', export: 'Export', print: 'Print/PDF',
+    export_csv: 'Download CSV', export_tsv: 'Download TSV',
+    copy_tsv: 'Copy TSV to clipboard', export_json: 'Download JSON',
+    tab_schedule: 'Schedule', tab_conflicts: 'Conflicts',
+    tab_versions: 'Versions', tab_instructors: 'Instructors', tab_courses: 'Courses',
+
+    sched_title: 'Schedule Grid · per Block',
+    sched_sub: 'Editable timetable with live conflict detection',
+    total_sections: 'Total Sections',
+    block_word: 'Block',
+    block1_title: 'Block 1 · Morning',
+    block2_title: 'Block 2 · Afternoon',
+    sections: 'Sections', conflicts: 'Conflicts', unfilled: 'Unfilled',
+    status: 'Status', status_ok: 'OK', status_review: 'Needs review',
+    code: 'Code', course: 'Course', type: 'Type', day: 'Day',
+    time: 'Time', instructor: 'Instructor',
+    add_section: '+ Add Section', clear: 'Clear',
+    remove_block: 'Remove block',
+    add_block: 'Add Block',
+    confirm_remove_block: (lvl, blk) => `Remove ${lvl} — Block ${blk === 'B1' ? '1' : '2'}? This will clear all sections in this block.`,
+    block_removed: 'Block removed',
+    block_restored: 'Block restored',
+    auto_allocate: 'Auto-allocate empty', reset: 'Reset edits',
+    online_note: 'Adheres to Type=عن بُعد · skips room/time conflict checks (R10)',
+    online_ok: 'Online OK',
+
+    conf_title: 'Conflict & Validation Engine',
+    conf_sub: 'Live rules — runs on every edit',
+    active_rules: 'Active Rules',
+    live_issues: 'Live issues detected',
+    no_issues: 'All clear · no rule violations',
+
+    ver_title: 'Versioning & Audit',
+    ver_sub: 'Reviewer-stamped snapshots, mirrors Control sheet workflow',
+    latest_snap: 'Latest Snapshot',
+    snap_log: 'Snapshot Log',
+    snap_log_sub: 'Append-only — every edit logged with reviewer and timestamp',
+    version: 'Version', reviewer: 'Reviewer', date: 'Date', notes: 'Notes',
+    create_snap: '+ Create snapshot', reviewer_required: 'Reviewer required (R12)',
+    restore: 'Restore',
+    takeaways: 'Key Takeaways',
+    tk1_t: 'Detect Conflicts', tk1_d: 'Live validation across blocks, instructors, and rooms.',
+    tk2_t: 'Track Load', tk2_d: 'Compare assigned credits with minimum teaching load.',
+    tk3_t: 'Version Control', tk3_d: 'Reviewer-stamped immutable snapshots for every revision.',
+    tk4_t: 'Bilingual & RTL', tk4_d: 'EN/AR labels with an Arabic-first print view.',
+    goal_t: 'Goal: Zero conflicts · 100% load coverage · Bilingual print-ready',
+    goal_d: 'Continuous improvement, fewer scheduling errors, faster reviews.',
+
+    instr_title: 'Instructors · Load Tracker',
+    instr_sub: 'Assigned credits vs. minimum teaching load',
+    name: 'Name', assigned: 'Assigned', min_load: 'Min Load', balance: 'Balance', load: 'Load',
+
+    courses_title: 'Course Catalog',
+    courses_sub: 'Master list of every course code in the schedule',
+    sections_count: 'Sections', credits: 'Credits', level: 'Level',
+
+    snap_prompt_rev: 'Reviewer name (e.g., Adel):',
+    snap_prompt_notes: 'Snapshot notes (e.g., what changed):',
+    snap_created: 'Snapshot created',
+    snap_restored: 'Snapshot restored',
+    confirm_reset: 'Reset all edits to the original schedule?',
+    reset_done: 'Reset to original',
+    auto_done: (n) => `Auto-allocated ${n} time slot${n===1?'':'s'}`,
+    csv_done: 'CSV downloaded', tsv_done: 'TSV downloaded',
+    json_done: 'JSON downloaded', tsv_clip_done: 'Copied · paste into Excel',
+    imported: (n) => `Imported ${n} rows`,
+    import_failed: 'Import failed — check file format'
+  },
+  ar: {
+    brand: 'جدول الأمن السيبراني',
+    brand_sub: 'العام 27/26 · قسم الأمن السيبراني',
+    import: 'استيراد', export: 'تصدير', print: 'طباعة/PDF',
+    export_csv: 'تنزيل CSV', export_tsv: 'تنزيل TSV',
+    copy_tsv: 'نسخ TSV', export_json: 'تنزيل JSON',
+    tab_schedule: 'الجدول', tab_conflicts: 'التعارضات',
+    tab_versions: 'الإصدارات', tab_instructors: 'أعضاء هيئة التدريس', tab_courses: 'المقررات',
+
+    sched_title: 'جدول الحصص · لكل بلوك',
+    sched_sub: 'جدول قابل للتعديل مع كشف التعارضات الفوري',
+    total_sections: 'إجمالي الحصص',
+    block_word: 'بلوك',
+    block1_title: 'البلوك الأول · الصباح',
+    block2_title: 'البلوك الثاني · بعد الظهر',
+    sections: 'حصص', conflicts: 'تعارضات', unfilled: 'غير مُعبأة',
+    status: 'الحالة', status_ok: 'تم', status_review: 'يحتاج مراجعة',
+    code: 'الرمز', course: 'المقرر', type: 'النوع', day: 'اليوم',
+    time: 'الوقت', instructor: 'المدرس',
+    add_section: '+ إضافة حصة', clear: 'مسح',
+    remove_block: 'إزالة البلوك',
+    add_block: 'إضافة بلوك',
+    confirm_remove_block: (lvl, blk) => `إزالة ${lvl} — بلوك ${blk === 'B1' ? '١' : '٢'}؟ سيؤدي هذا إلى مسح جميع الحصص في هذا البلوك.`,
+    block_removed: 'تمت إزالة البلوك',
+    block_restored: 'تم استرجاع البلوك',
+    auto_allocate: 'تعبئة تلقائية للفارغ', reset: 'إعادة تعيين',
+    online_note: 'النوع = عن بُعد · يتخطى فحوصات تعارض الوقت/القاعة (R10)',
+    online_ok: 'عن بعد تم',
+
+    conf_title: 'محرّك التعارضات والتحقق',
+    conf_sub: 'قواعد فورية — تعمل عند كل تعديل',
+    active_rules: 'القواعد النشطة',
+    live_issues: 'المشكلات المرصودة حالياً',
+    no_issues: 'لا توجد مخالفات قواعد',
+
+    ver_title: 'الإصدارات والتدقيق',
+    ver_sub: 'لقطات موقّعة من المراجع، تحاكي ورقة Control',
+    latest_snap: 'آخر لقطة',
+    snap_log: 'سجل اللقطات',
+    snap_log_sub: 'إضافة فقط — كل تعديل مسجّل بالمراجع والتاريخ',
+    version: 'الإصدار', reviewer: 'المراجع', date: 'التاريخ', notes: 'ملاحظات',
+    create_snap: '+ إنشاء لقطة', reviewer_required: 'يلزم اسم مراجع (R12)',
+    restore: 'استرجاع',
+    takeaways: 'النقاط الرئيسية',
+    tk1_t: 'كشف التعارضات', tk1_d: 'تحقق فوري عبر البلوكات والمدرسين والقاعات.',
+    tk2_t: 'تتبّع العبء', tk2_d: 'مقارنة الساعات المسندة بالحد الأدنى للتدريس.',
+    tk3_t: 'إدارة الإصدارات', tk3_d: 'لقطات موقّعة وغير قابلة للتعديل لكل مراجعة.',
+    tk4_t: 'ثنائي اللغة و RTL', tk4_d: 'عناوين عربية/إنجليزية مع وضع طباعة عربي أولاً.',
+    goal_t: 'الهدف: صفر تعارضات · 100% تغطية العبء · جاهز للطباعة بلغتين',
+    goal_d: 'تحسين مستمر، أخطاء جدولة أقل، مراجعات أسرع.',
+
+    instr_title: 'أعضاء هيئة التدريس · مؤشّر العبء',
+    instr_sub: 'الساعات المسندة مقارنةً بالحد الأدنى للتدريس',
+    name: 'الاسم', assigned: 'مسند', min_load: 'الحد الأدنى', balance: 'الفرق', load: 'العبء',
+
+    courses_title: 'فهرس المقررات',
+    courses_sub: 'قائمة رئيسية بكل أكواد المقررات في الجدول',
+    sections_count: 'حصص', credits: 'الساعات', level: 'المستوى',
+
+    snap_prompt_rev: 'اسم المراجع (مثال: عادل):',
+    snap_prompt_notes: 'ملاحظات اللقطة (ماذا تغيّر):',
+    snap_created: 'تم إنشاء اللقطة',
+    snap_restored: 'تم استرجاع اللقطة',
+    confirm_reset: 'إعادة تعيين كل التعديلات إلى الجدول الأصلي؟',
+    reset_done: 'تمت الإعادة إلى الأصل',
+    auto_done: (n) => `تم تعيين ${n} وقتاً تلقائياً`,
+    csv_done: 'تم تنزيل CSV', tsv_done: 'تم تنزيل TSV',
+    json_done: 'تم تنزيل JSON', tsv_clip_done: 'تم النسخ · الصق في Excel',
+    imported: (n) => `تم استيراد ${n} صف`,
+    import_failed: 'فشل الاستيراد — تحقق من تنسيق الملف'
+  }
+};
+
+// ==================== RULES ====================
+const RULES = [
+  { id: 'R1', tag: 'green', span: false, group: 'derive',
+    title_en: 'Status Derivation', title_ar: 'اشتقاق الحالة',
+    desc_en: 'Auto-set per row: blank · Scheduled · Missing Instructor · Missing Time Slot · Conflict.',
+    desc_ar: 'تعيين تلقائي لكل صف: فارغ · مجدول · مدرّس ناقص · وقت ناقص · تعارض.',
+    range: 'R1–R4'
+  },
+  { id: 'R5', tag: 'red', group: 'level',
+    title_en: 'Day + Time + Level Conflict', title_ar: 'تعارض اليوم + الوقت + المستوى',
+    desc_en: 'Block edit if Day+Time+Level matches another row (excluding عن بُعد online).',
+    desc_ar: 'منع التعديل إذا اليوم+الوقت+المستوى يطابق صفاً آخر (باستثناء عن بُعد).'
+  },
+  { id: 'R6', tag: 'red', group: 'instructor',
+    title_en: 'Instructor Double-Booking', title_ar: 'حجز مزدوج للمدرس',
+    desc_en: 'Conflict if instructor appears in two blocks at the same Day+Time.',
+    desc_ar: 'تعارض إذا ظهر المدرس في بلوكين بنفس اليوم والوقت.'
+  },
+  { id: 'R8', tag: 'amber', group: 'load',
+    title_en: 'Min Load Enforcement', title_ar: 'فرض الحد الأدنى للعبء',
+    desc_en: 'Warn when Assigned credits < Min Load per instructor (LoadMeter amber).',
+    desc_ar: 'تنبيه عندما الساعات المسندة < الحد الأدنى للتدريس (مؤشر عبء أصفر).'
+  },
+  { id: 'R10', tag: 'gray', span: true, group: 'online',
+    title_en: 'CECY/CCCY Required Instructor · Online Bypass', title_ar: 'CECY/CCCY مدرس مطلوب · استثناء عن بُعد',
+    desc_en: 'Codes prefixed CECY/CCCY require an instructor on save. Type=عن بُعد bypasses room and time-of-day conflict checks within Level.',
+    desc_ar: 'مقررات CECY/CCCY تتطلب مدرساً عند الحفظ. النوع = عن بُعد يتخطى فحوصات القاعة والوقت داخل المستوى.',
+    range: 'R10–R11'
+  },
+  // Supporting rules to reach 12 total
+  { id: 'R7', tag: 'gray', group: 'slot',
+    title_en: 'Type ↔ Slot Match', title_ar: 'مطابقة النوع للوقت',
+    desc_en: 'نظري and عن بُعد use lecture slots; عملي uses lab slots.',
+    desc_ar: 'النظري وعن بُعد يستخدمان أوقات المحاضرات؛ العملي يستخدم أوقات المعامل.'
+  },
+  { id: 'R9', tag: 'gray', group: 'days',
+    title_en: 'Valid Day Codes', title_ar: 'أكواد الأيام الصحيحة',
+    desc_en: 'Theory: M..W or U..T. Practical: U / M / T / W / R single days.',
+    desc_ar: 'النظري: M..W أو U..T. العملي: يوم واحد U / M / T / W / R.'
+  },
+  { id: 'R12', tag: 'gray', group: 'audit',
+    title_en: 'Snapshot Reviewer Required', title_ar: 'يلزم مراجع للقطة',
+    desc_en: 'Every snapshot must record reviewer name and timestamp.',
+    desc_ar: 'كل لقطة تسجّل اسم المراجع والوقت.'
+  }
+];
+
+// ==================== STATE ====================
+const ORIGINAL = JSON.parse(JSON.stringify(DATA.rows));
+const state = {
+  rows: JSON.parse(JSON.stringify(DATA.rows)),
+  lang: 'en',
+  snapshots: loadSnapshots(),
+  disabledBlocks: new Set()   // keys like "الثالث||B2"
+};
+
+function loadSnapshots() {
+  // try localStorage; fall back to in-memory if blocked
+  try {
+    const raw = localStorage.getItem('cy_sched_snapshots_v1');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return [
+    { v: 'v0.1', reviewer: 'Adel', date: '2026-04-15', notes: 'Baseline import from workbook', rows: null },
+    { v: 'v0.2', reviewer: 'Adel', date: '2026-04-22', notes: 'Added 4 lab sections', rows: null },
+    { v: 'v0.3', reviewer: 'Sara', date: '2026-04-28', notes: 'Resolved B2 time clash', rows: null },
+    { v: 'v0.4', reviewer: 'Adel', date: '2026-05-01', notes: 'Filled CECY418 instructor', rows: null }
+  ];
+}
+function persistSnapshots() {
+  try { localStorage.setItem('cy_sched_snapshots_v1', JSON.stringify(state.snapshots)); } catch(e) {}
+}
+
+// ==================== HELPERS ====================
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+const tr = (k) => {
+  const v = TR[state.lang][k];
+  return v !== undefined ? v : k;
+};
+const escape = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function slotInfo(code) {
+  if (!code) return null;
+  return ALL_SLOTS.find(s => s.code === code) || null;
+}
+function rangesOverlap(a, b) {
+  if (!a || !b) return false;
+  return a.start < b.end && b.start < a.end;
+}
+function getSlotOptionsFor(type) {
+  return type === 'عملي' ? LAB_SLOTS : LECTURE_SLOTS;
+}
+function getDayOptionsFor(type) {
+  if (type === 'عملي') return DAY_OPTIONS_PRAC;
+  if (type === 'عن بعد') return DAY_OPTIONS_ONLINE;
+  return DAY_OPTIONS_THEORY;
+}
+function isOnline(r) { return r.type === 'عن بعد'; }
+
+// ==================== CONFLICT ENGINE ====================
+function buildSessions() {
+  const sessions = [];
+  state.rows.forEach((r, idx) => {
+    const days = DAY_EXPAND[r.days] || [];
+    [{block:'B1', time:r.b1_time, instr:r.b1_instr},
+     {block:'B2', time:r.b2_time, instr:r.b2_instr}].forEach(b => {
+       if (!b.time) return;
+       const info = slotInfo(b.time);
+       if (!info) return;
+       days.forEach(d => sessions.push({
+         rowIdx: idx, row: r.row, code: r.code, level: r.level,
+         block: b.block, day: d, info, instr: b.instr, online: isOnline(r)
+       }));
+     });
+  });
+  return sessions;
+}
+function detectConflicts() {
+  const sessions = buildSessions();
+  const conflictsByRow = {};
+  const list = [];
+  for (let i = 0; i < sessions.length; i++) {
+    for (let j = i+1; j < sessions.length; j++) {
+      const a = sessions[i], b = sessions[j];
+      if (a.day !== b.day) continue;
+      if (!rangesOverlap(a.info, b.info)) continue;
+      if (a.rowIdx === b.rowIdx) continue;
+      const sameLevel = a.level && b.level && a.level === b.level && !(a.online || b.online); // R5 + R11
+      const sameInstr = a.instr && b.instr && a.instr === b.instr; // R6
+      if (!sameLevel && !sameInstr) continue;
+      const ruleId = sameLevel ? 'R5' : 'R6';
+      const reason_en = sameLevel ? `Level "${a.level}"` : `Instructor "${a.instr}"`;
+      const reason_ar = sameLevel ? `المستوى "${a.level}"` : `المدرس "${a.instr}"`;
+      [a, b].forEach(s => {
+        conflictsByRow[s.rowIdx] = conflictsByRow[s.rowIdx] || new Set();
+        conflictsByRow[s.rowIdx].add(s.block);
+      });
+      list.push({
+        rule: ruleId, day: a.day,
+        reason_en, reason_ar,
+        a: `R${a.row} ${a.code} ${a.block} (${a.info.code})`,
+        b: `R${b.row} ${b.code} ${b.block} (${b.info.code})`
+      });
+    }
+  }
+  return { conflictsByRow, list };
+}
+function rowStatus(r, conflictBlocks) {
+  // Returns { B1: status, B2: status } per block
+  const out = {};
+  ['B1','B2'].forEach(blk => {
+    const time = blk === 'B1' ? r.b1_time : r.b2_time;
+    const instr = blk === 'B1' ? r.b1_instr : r.b2_instr;
+    const isLab = r.type === 'عملي';
+    if (blk === 'B2' && isLab) { out[blk] = 'na'; return; }
+    if (conflictBlocks && conflictBlocks.has(blk)) { out[blk] = 'conflict'; return; }
+    if (!r.days && !time && !instr) { out[blk] = 'blank'; return; }
+    if (r.days && time && instr) { out[blk] = 'scheduled'; return; }
+    if (r.days && time && !instr) { out[blk] = 'missing-instr'; return; }
+    if ((r.days || time) && !time) { out[blk] = 'missing-time'; return; }
+    if (time && !instr) { out[blk] = 'missing-instr'; return; }
+    out[blk] = 'partial';
+  });
+  return out;
+}
+function statusPill(s) {
+  const map = {
+    'scheduled': { en: 'Scheduled', ar: 'مجدول', cls: 'status-scheduled' },
+    'missing-instr': { en: 'Missing Instructor', ar: 'مدرس ناقص', cls: 'status-warn' },
+    'missing-time': { en: 'Missing Time Slot', ar: 'وقت ناقص', cls: 'status-warn' },
+    'conflict': { en: 'Conflict', ar: 'تعارض', cls: 'status-bad' },
+    'partial': { en: 'Partial', ar: 'جزئي', cls: 'status-warn' },
+    'blank': { en: '—', ar: '—', cls: '' },
+    'na': { en: '', ar: '', cls: '' }
+  };
+  const item = map[s];
+  if (!item || s === 'na') return '';
+  if (s === 'blank') return `<span style="color:var(--ink-faint)">—</span>`;
+  return `<span class="pill ${item.cls}"><span class="dot"></span>${state.lang === 'ar' ? item.ar : item.en}</span>`;
+}
+
+// ==================== TAB SWITCHING ====================
+$$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  $$('.panel').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  const tab = t.dataset.tab;
+  $(`#panel-${tab}`).classList.add('active');
+  renderActive();
+}));
+
+function renderActive() {
+  const active = $('.tab.active').dataset.tab;
+  if (active === 'schedule') renderSchedule();
+  if (active === 'conflicts') renderConflicts();
+  if (active === 'versions') renderVersions();
+  if (active === 'instructors') renderInstructors();
+  if (active === 'courses') renderCourses();
+  // always update conflict count badge
+  const { list } = detectConflicts();
+  $('#cnt-conflicts').textContent = list.length;
+}
+
+// ==================== SCHEDULE PANEL ====================
+// Map Arabic level names → compact English labels
+function levelLabel(arLevel, lang) {
+  if (!arLevel) return '—';
+  const numMap = {
+    'الأول':1, 'الثاني':2, 'الثالث':3, 'الرابع':4, 'الخامس':5,
+    'السادس':6, 'السابع':7, 'الثامن':8, 'التاسع':9, 'العاشر':10
+  };
+  const m = arLevel.match(/^(\S+?)(?:\s*\((.+?)\))?$/);
+  const base = m ? m[1].trim() : arLevel.trim();
+  const suffix = m && m[2] ? m[2].trim() : '';
+  const num = numMap[base];
+  if (lang === 'ar') return arLevel; // Arabic: native form
+  if (num) {
+    const sufEN = suffix.includes('الدوليين') ? " (Int'l)"
+                : suffix.includes('السعوديين') ? ' (Saudi)'
+                : suffix ? ` (${suffix})` : '';
+    return `Level ${num}${sufEN}`;
+  }
+  // dept-named groupings
+  if (arLevel.includes('هندسة البرمجيات')) return 'SW Engineering';
+  if (arLevel.includes('الذكاء الاصطناعي')) return 'AI Department';
+  if (arLevel.includes('العلوم')) return 'CS Department';
+  return arLevel; // fallback
+}
+
+function blockNumLabel(blockName, lang) {
+  const n = blockName === 'B1' ? '1' : '2';
+  if (lang === 'ar') return `${tr('block_word')} ${n === '1' ? '١' : '٢'}`;
+  return `Block ${n}`;
+}
+
+function renderSchedule() {
+  const { conflictsByRow } = detectConflicts();
+  function isLabRow(r) { return r.type === 'عملي'; }
+
+  // Top stats: total sections (filled blocks across all rows)
+  let totalSections = 0;
+  state.rows.forEach(r => {
+    if (r.b1_time) totalSections++;
+    if (r.b2_time && !isLabRow(r)) totalSections++;
+  });
+
+  // Group rows by level (preserve workbook order of first appearance)
+  const byLevel = new Map();
+  state.rows.forEach((r, idx) => {
+    const k = r.level || '—';
+    if (!byLevel.has(k)) byLevel.set(k, []);
+    byLevel.get(k).push({ ...r, _idx: idx });
+  });
+
+  let html = `
+    <div class="panel-head">
+      <div class="panel-title-block">
+        <div class="panel-num">1</div>
+        <div>
+          <div class="panel-title">${escape(tr('sched_title'))}</div>
+          <div class="panel-sub">${escape(tr('sched_sub'))}</div>
+        </div>
+      </div>
+      <div class="panel-stat">
+        <div>${escape(tr('total_sections'))}</div>
+        <span class="num">${totalSections}</span>
+      </div>
+    </div>
+    <div class="toolbar-actions" style="margin-bottom:16px;justify-content:flex-end;gap:8px">
+      <button class="btn btn-primary btn-sm" id="btn-autofill">⚡ ${escape(tr('auto_allocate'))}</button>
+      <button class="btn btn-ghost btn-sm" id="btn-reset-edits">↺ ${escape(tr('reset'))}</button>
+    </div>
+  `;
+
+  // For each level, render Block 1 card, then Block 2 card (if any non-lab rows)
+  byLevel.forEach((items, level) => {
+    html += `<div class="level-section">`;
+    const b1Disabled = state.disabledBlocks.has(`${level}||B1`);
+    const b2Disabled = state.disabledBlocks.has(`${level}||B2`);
+    const nonLab = items.filter(r => !isLabRow(r));
+
+    if (!b1Disabled) {
+      html += renderLevelBlockCard(items, level, 'B1', conflictsByRow, true);
+    }
+    if (nonLab.length > 0 && !b2Disabled) {
+      html += renderLevelBlockCard(items, level, 'B2', conflictsByRow, b1Disabled);
+    }
+
+    // restore buttons for any disabled blocks
+    const removed = [];
+    if (b1Disabled) removed.push('B1');
+    if (b2Disabled && nonLab.length > 0) removed.push('B2');
+    if (removed.length > 0) {
+      html += `<div class="level-restore">
+        <span class="level-restore-lbl ar" dir="auto">${escape(state.lang === 'ar' ? level : levelLabel(level, 'en'))}:</span>
+        ${removed.map(b => `<button class="btn btn-ghost btn-sm restore-block" data-level="${escape(level)}" data-block="${b}">+ ${escape(tr('add_block'))} ${b === 'B1' ? '1' : '2'}</button>`).join('')}
+      </div>`;
+    }
+
+    html += `</div>`;
+  });
+
+  $('#panel-schedule').innerHTML = html;
+
+  // wire up dynamic events
+  $('#btn-autofill').addEventListener('click', () => {
+    const n = autoAllocate();
+    const fn = TR[state.lang].auto_done;
+    toast(typeof fn === 'function' ? fn(n) : `${n}`, 'success');
+    renderActive();
+  });
+  $('#btn-reset-edits').addEventListener('click', () => {
+    if (!confirm(tr('confirm_reset'))) return;
+    state.rows = JSON.parse(JSON.stringify(ORIGINAL));
+    toast(tr('reset_done'));
+    renderActive();
+  });
+  $$('#panel-schedule .edit').forEach(s => {
+    s.addEventListener('change', e => {
+      const idx = +e.target.dataset.idx;
+      const field = e.target.dataset.field;
+      state.rows[idx][field] = e.target.value;
+      renderActive();
+    });
+  });
+  $$('#panel-schedule .clear-row').forEach(b => {
+    b.addEventListener('click', e => {
+      const btn = e.target.closest('.clear-row');
+      const idx = +btn.dataset.idx;
+      const blk = btn.dataset.block;
+      const r = state.rows[idx];
+      if (blk === 'B1') { r.b1_time = ''; r.b1_instr = ''; r.b1_room = ''; }
+      else { r.b2_time = ''; r.b2_instr = ''; r.b2_room = ''; }
+      renderActive();
+    });
+  });
+  $$('#panel-schedule .block-remove').forEach(b => {
+    b.addEventListener('click', e => {
+      const btn = e.target.closest('.block-remove');
+      const level = btn.dataset.level;
+      const block = btn.dataset.block;
+      const fn = TR[state.lang].confirm_remove_block;
+      const msg = typeof fn === 'function' ? fn(level, block) : `Remove ${level} ${block}?`;
+      if (!confirm(msg)) return;
+      // clear data for affected rows
+      state.rows.forEach(r => {
+        if ((r.level || '—') !== level) return;
+        if (block === 'B1') { r.b1_time = ''; r.b1_instr = ''; r.b1_room = ''; }
+        else { r.b2_time = ''; r.b2_instr = ''; r.b2_room = ''; }
+      });
+      state.disabledBlocks.add(`${level}||${block}`);
+      toast(tr('block_removed'));
+      renderActive();
+    });
+  });
+  $$('#panel-schedule .restore-block').forEach(b => {
+    b.addEventListener('click', e => {
+      const btn = e.target.closest('.restore-block');
+      const level = btn.dataset.level;
+      const block = btn.dataset.block;
+      state.disabledBlocks.delete(`${level}||${block}`);
+      toast(tr('block_restored'), 'success');
+      renderActive();
+    });
+  });
+}
+
+// One card = one (Level, Block) combination
+function renderLevelBlockCard(allItems, level, blockName, conflictsByRow, isFirstOfLevel) {
+  // Filter to rows that should appear in this block
+  const items = blockName === 'B2'
+    ? allItems.filter(r => r.type !== 'عملي')   // labs have only B1
+    : allItems;
+
+  // Per-card stats
+  let sections = 0, confs = 0, unfilled = 0;
+  items.forEach(r => {
+    const time = blockName === 'B1' ? r.b1_time : r.b2_time;
+    if (time) sections++;
+    else unfilled++;
+    const cset = conflictsByRow[r._idx];
+    if (cset?.has(blockName)) confs++;
+  });
+
+  const status = confs > 0 ? 'bad' : (unfilled > 0 ? 'warn' : 'ok');
+  const statusLabel = confs > 0 ? tr('conflicts')
+                    : unfilled > 0 ? tr('status_review')
+                    : tr('status_ok');
+
+  // Title format: "Level 3 - Block 1" (with bilingual subtitle on first card per level)
+  const sep = state.lang === 'ar' ? ' \u2014 ' : ' \u2014 ';  // em-dash
+  const lvlEN = levelLabel(level, 'en');
+  const lvlAR = level;
+  const blkLabel = blockNumLabel(blockName, state.lang);
+  const primaryTitle = state.lang === 'ar'
+    ? `${lvlAR}${sep}${blkLabel}`
+    : `${lvlEN}${sep}${blkLabel}`;
+  const altTitle = state.lang === 'ar' ? lvlEN : lvlAR;
+
+  return `<div class="block-card${isFirstOfLevel ? ' first-of-level' : ''}">
+    <div class="block-head">
+      <div class="block-tag">${blockName}</div>
+      <div class="block-title-wrap">
+        <div class="block-title">${escape(primaryTitle)}</div>
+        <div class="block-subtitle ar" dir="auto">${escape(altTitle)}</div>
+      </div>
+      <div class="block-meta">
+        <span><span>${escape(tr('sections'))}:</span> <strong>${sections}</strong></span>
+        <span><span>${escape(tr('conflicts'))}:</span> <strong style="color:${confs>0?'var(--status-bad)':'var(--ink)'}">${confs}</strong></span>
+        <span><span>${escape(tr('unfilled'))}:</span> <strong style="color:${unfilled>0?'var(--status-warn)':'var(--ink)'}">${unfilled}</strong></span>
+        <span><span>${escape(tr('status'))}:</span> <strong class="status-${status}">${escape(statusLabel)}</strong></span>
+      </div>
+      <button class="block-remove" data-level="${escape(level)}" data-block="${blockName}" title="${escape(tr('remove_block'))}" aria-label="${escape(tr('remove_block'))}">×</button>
+    </div>
+    <table class="sched">
+      <thead><tr>
+        <th style="width:90px">${escape(tr('code'))}</th>
+        <th>${escape(tr('course'))}</th>
+        <th style="width:70px">${escape(tr('type'))}</th>
+        <th style="width:80px">${escape(tr('day'))}</th>
+        <th style="width:130px">${escape(tr('time'))}</th>
+        <th style="width:170px">${escape(tr('instructor'))}</th>
+        <th style="width:140px">${escape(tr('status'))}</th>
+        <th class="th-actions" style="width:32px"></th>
+      </tr></thead>
+      <tbody>
+        ${items.map(r => renderScheduleRow(r, blockName, conflictsByRow)).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderScheduleRow(r, blockName, conflictsByRow) {
+  const idx = r._idx;
+  const conf = conflictsByRow[idx] || new Set();
+  const time = blockName === 'B1' ? r.b1_time : r.b2_time;
+  const instr = blockName === 'B1' ? r.b1_instr : r.b2_instr;
+  const timeField = blockName === 'B1' ? 'b1_time' : 'b2_time';
+  const instrField = blockName === 'B1' ? 'b1_instr' : 'b2_instr';
+  const isConf = conf.has(blockName);
+
+  const status = rowStatus(r, conf)[blockName];
+
+  return `<tr class="${isConf ? 'has-conflict' : ''}">
+    <td class="code-cell">${escape(r.code)}</td>
+    <td class="course-cell">
+      <div class="course-name ar" dir="auto">${escape(r.name) || '<span style="color:var(--ink-faint)">—</span>'}</div>
+    </td>
+    <td class="type-cell">${r.type ? `<span class="pill type">${escape(r.type)}</span>` : ''}</td>
+    <td class="day-cell">${daySelect(idx, r.days, r.type)}</td>
+    <td class="time-cell">${timeSelect(idx, timeField, time, r.type, isConf)}</td>
+    <td class="instr-cell">${instrSelect(idx, instrField, instr)}</td>
+    <td class="status-cell">${statusPill(status)}</td>
+    <td class="actions-cell">${(time || instr) ? `<button class="btn btn-ghost btn-icon clear-row" data-idx="${idx}" data-block="${blockName}" title="${escape(tr('clear'))}">🗑</button>` : ''}</td>
+  </tr>`;
+}
+
+function daySelect(idx, val, type) {
+  const opts = getDayOptionsFor(type);
+  const cls = val ? '' : 'empty';
+  let html = `<select class="edit mono ${cls}" data-idx="${idx}" data-field="days"><option value="">—</option>`;
+  opts.forEach(o => html += `<option value="${o}" ${o===val?'selected':''}>${o}</option>`);
+  if (val && !opts.includes(val)) html += `<option value="${escape(val)}" selected>${escape(val)}</option>`;
+  html += '</select>';
+  return html;
+}
+function timeSelect(idx, field, val, type, isConflict) {
+  const opts = getSlotOptionsFor(type);
+  const cls = isConflict ? 'conflict' : (val ? '' : 'empty');
+  let html = `<select class="edit mono ${cls}" data-idx="${idx}" data-field="${field}"><option value="">—</option>`;
+  opts.forEach(o => html += `<option value="${o.code}" ${o.code===val?'selected':''}>${o.code}</option>`);
+  if (val && !opts.find(o => o.code === val)) html += `<option value="${escape(val)}" selected>${escape(val)}</option>`;
+  html += '</select>';
+  return html;
+}
+function instrSelect(idx, field, val) {
+  const cls = val ? '' : 'empty';
+  let html = `<select class="edit ar ${cls}" data-idx="${idx}" data-field="${field}"><option value="">—</option>`;
+  DATA.instructors.forEach(i => html += `<option value="${escape(i)}" ${i===val?'selected':''}>${escape(i)}</option>`);
+  if (val && !DATA.instructors.includes(val)) html += `<option value="${escape(val)}" selected>${escape(val)}</option>`;
+  html += '</select>';
+  return html;
+}
+
+// ==================== AUTO-ALLOCATE ====================
+function autoAllocate() {
+  let allocated = 0;
+  for (let i = 0; i < state.rows.length; i++) {
+    const r = state.rows[i];
+    const slotOpts = getSlotOptionsFor(r.type);
+    const dayOpts = getDayOptionsFor(r.type);
+    if (!r.days) {
+      // pick first day option that allows fill
+      for (const d of dayOpts) {
+        r.days = d;
+        if (!r.b1_time && tryFillBlock(i, 'b1_time', slotOpts)) { allocated++; break; }
+        else if (!r.b1_time) r.days = '';
+        else break;
+      }
+    }
+    if (r.days && !r.b1_time) {
+      if (tryFillBlock(i, 'b1_time', slotOpts)) allocated++;
+    }
+    if (r.days && r.type !== 'عملي' && !r.b2_time) {
+      if (tryFillBlock(i, 'b2_time', slotOpts)) allocated++;
+    }
+  }
+  return allocated;
+}
+function tryFillBlock(idx, field, slotOpts) {
+  const r = state.rows[idx];
+  for (const s of slotOpts) {
+    r[field] = s.code;
+    const { conflictsByRow } = detectConflicts();
+    const set = conflictsByRow[idx];
+    const blockKey = field.startsWith('b1') ? 'B1' : 'B2';
+    if (!set || !set.has(blockKey)) return true;
+  }
+  r[field] = '';
+  return false;
+}
+
+// ==================== CONFLICTS PANEL ====================
+function renderConflicts() {
+  const { list } = detectConflicts();
+  let html = `
+    <div class="panel-head">
+      <div class="panel-title-block">
+        <div class="panel-num">2</div>
+        <div>
+          <div class="panel-title">${escape(tr('conf_title'))}</div>
+          <div class="panel-sub">${escape(tr('conf_sub'))}</div>
+        </div>
+      </div>
+      <div class="panel-stat">
+        <div>${escape(tr('active_rules'))}</div>
+        <span class="num">${RULES.length + 4}</span>
+      </div>
+    </div>
+    <div class="rules-grid">`;
+
+  const orderedRules = [
+    RULES.find(r => r.id==='R1'), RULES.find(r => r.id==='R5'),
+    RULES.find(r => r.id==='R6'), RULES.find(r => r.id==='R8'),
+    RULES.find(r => r.id==='R10'),
+    RULES.find(r => r.id==='R7'), RULES.find(r => r.id==='R9'),
+    RULES.find(r => r.id==='R12')
+  ];
+  orderedRules.forEach(r => {
+    if (!r) return;
+    html += `<div class="rule-card${r.span?' span-2':''}">
+      <span class="rule-tag ${r.tag}">${r.range || r.id}</span>
+      <h3>${escape(state.lang === 'ar' ? r.title_ar : r.title_en)}</h3>
+      <p>${escape(state.lang === 'ar' ? r.desc_ar : r.desc_en)}</p>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  // live issues
+  html += `<div class="live-issues">
+    <div class="live-issues-head">
+      <h3>${escape(tr('live_issues'))}</h3>
+      <span class="pill ${list.length === 0 ? 'status-scheduled' : 'status-bad'}"><span class="dot"></span>${list.length}</span>
+    </div>`;
+  if (list.length === 0) {
+    html += `<div class="empty-state">✓ ${escape(tr('no_issues'))}</div>`;
+  } else {
+    list.slice(0, 50).forEach(c => {
+      html += `<div class="issue-row">
+        <span class="issue-tag ${c.rule.toLowerCase()}">${c.rule}</span>
+        <span class="issue-meta">${escape(c.day)} · ${escape(state.lang === 'ar' ? c.reason_ar : c.reason_en)}</span>
+        <span class="issue-msg">${escape(c.a)} ⟷ ${escape(c.b)}</span>
+      </div>`;
+    });
+    if (list.length > 50)
+      html += `<div class="issue-row" style="color:var(--ink-faint);font-style:italic">+ ${list.length - 50} more</div>`;
+  }
+  html += '</div>';
+
+  $('#panel-conflicts').innerHTML = html;
+}
+
+// ==================== VERSIONS PANEL ====================
+function renderVersions() {
+  const latest = state.snapshots[state.snapshots.length - 1] || { v: '—' };
+  let html = `
+    <div class="panel-head">
+      <div class="panel-title-block">
+        <div class="panel-num">3</div>
+        <div>
+          <div class="panel-title">${escape(tr('ver_title'))}</div>
+          <div class="panel-sub">${escape(tr('ver_sub'))}</div>
+        </div>
+      </div>
+      <div class="panel-stat">
+        <div>${escape(tr('latest_snap'))}</div>
+        <span class="num" style="font-family:'Geist Mono',monospace;font-size:18px;font-weight:500">${escape(latest.v)}_${escape(latest.reviewer || '')}_${escape(latest.date || '')}</span>
+      </div>
+    </div>
+    <div class="versions-grid">
+      <div class="versions-card">
+        <div class="versions-card-head">
+          <h3>${escape(tr('snap_log'))}</h3>
+          <p>${escape(tr('snap_log_sub'))}</p>
+        </div>
+        <table class="versions">
+          <thead><tr>
+            <th>${escape(tr('version'))}</th>
+            <th>${escape(tr('reviewer'))}</th>
+            <th>${escape(tr('date'))}</th>
+            <th>${escape(tr('notes'))}</th>
+            <th class="actions"></th>
+          </tr></thead>
+          <tbody>
+            ${state.snapshots.slice().reverse().map((s, ridx) => {
+              const realIdx = state.snapshots.length - 1 - ridx;
+              return `<tr>
+                <td class="v">${escape(s.v)}</td>
+                <td>${escape(s.reviewer)}</td>
+                <td class="dt">${escape(s.date)}</td>
+                <td>${escape(s.notes)}</td>
+                <td class="actions">${s.rows ? `<button class="btn btn-ghost btn-sm restore-snap" data-idx="${realIdx}">${escape(tr('restore'))}</button>` : ''}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        <div class="versions-foot">
+          <button class="btn btn-primary btn-sm" id="btn-create-snap">${escape(tr('create_snap'))}</button>
+          <span>·</span>
+          <span>${escape(tr('reviewer_required'))}</span>
+        </div>
+      </div>
+
+      <div class="versions-card">
+        <div class="takeaways">
+          <h3><span style="color:var(--status-ok)">★</span>${escape(tr('takeaways'))}</h3>
+          <div class="takeaway-item"><div class="takeaway-icon">◎</div><div><h4>${escape(tr('tk1_t'))}</h4><p>${escape(tr('tk1_d'))}</p></div></div>
+          <div class="takeaway-item"><div class="takeaway-icon">▦</div><div><h4>${escape(tr('tk2_t'))}</h4><p>${escape(tr('tk2_d'))}</p></div></div>
+          <div class="takeaway-item"><div class="takeaway-icon">↺</div><div><h4>${escape(tr('tk3_t'))}</h4><p>${escape(tr('tk3_d'))}</p></div></div>
+          <div class="takeaway-item"><div class="takeaway-icon">⇄</div><div><h4>${escape(tr('tk4_t'))}</h4><p>${escape(tr('tk4_d'))}</p></div></div>
+          <div class="goal-banner">
+            <div class="icon">🏆</div>
+            <div>
+              <h4>${escape(tr('goal_t'))}</h4>
+              <p>${escape(tr('goal_d'))}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#panel-versions').innerHTML = html;
+
+  $('#btn-create-snap').addEventListener('click', () => {
+    const reviewer = prompt(tr('snap_prompt_rev'), 'Adel');
+    if (!reviewer) return;
+    const notes = prompt(tr('snap_prompt_notes'), '');
+    const last = state.snapshots[state.snapshots.length - 1];
+    const lastV = last ? parseFloat(last.v.replace('v','')) : 0.0;
+    const newV = 'v' + (lastV + 0.1).toFixed(1);
+    const today = new Date().toISOString().slice(0, 10);
+    state.snapshots.push({
+      v: newV, reviewer, date: today,
+      notes: notes || '(no notes)',
+      rows: JSON.parse(JSON.stringify(state.rows))
+    });
+    persistSnapshots();
+    toast(tr('snap_created'), 'success');
+    renderActive();
+  });
+  $$('.restore-snap').forEach(b => b.addEventListener('click', e => {
+    const idx = +e.target.dataset.idx;
+    const snap = state.snapshots[idx];
+    if (!snap.rows) return;
+    state.rows = JSON.parse(JSON.stringify(snap.rows));
+    toast(tr('snap_restored'), 'success');
+    renderActive();
+  }));
+}
+
+// ==================== INSTRUCTORS PANEL ====================
+function renderInstructors() {
+  // build credit counts from current state
+  const map = {}; // instr -> assigned credits
+  state.rows.forEach(r => {
+    [r.b1_instr, r.b2_instr].forEach((ins, i) => {
+      if (!ins) return;
+      const time = i === 0 ? r.b1_time : r.b2_time;
+      if (!time) return;
+      const cr = +(r.credits || 0);
+      map[ins] = (map[ins] || 0) + cr;
+    });
+  });
+
+  const minLoadMap = {}; // from lookup data
+  (DATA.instructor_loads || []).forEach(([n, m]) => minLoadMap[n] = m);
+  // fall back: assume 12 default
+  const allInstr = [...new Set([...DATA.instructors, ...Object.keys(map)])];
+
+  let html = `
+    <div class="panel-head">
+      <div class="panel-title-block">
+        <div class="panel-num">4</div>
+        <div>
+          <div class="panel-title">${escape(tr('instr_title'))}</div>
+          <div class="panel-sub">${escape(tr('instr_sub'))}</div>
+        </div>
+      </div>
+      <div class="panel-stat">
+        <div>${escape(tr('instructor'))}</div>
+        <span class="num">${allInstr.length}</span>
+      </div>
+    </div>
+    <table class="list">
+      <thead><tr>
+        <th>${escape(tr('name'))}</th>
+        <th style="width:100px">${escape(tr('assigned'))}</th>
+        <th style="width:100px">${escape(tr('min_load'))}</th>
+        <th style="width:100px">${escape(tr('balance'))}</th>
+        <th style="width:200px">${escape(tr('load'))}</th>
+      </tr></thead>
+      <tbody>`;
+  allInstr.sort().forEach(ins => {
+    const a = map[ins] || 0;
+    const m = minLoadMap[ins] || 12;
+    const bal = a - m;
+    const pct = Math.min(100, (a / Math.max(m, 1)) * 100);
+    const status = a < m ? 'under' : (a > m * 1.3 ? 'over' : 'ok');
+    html += `<tr>
+      <td class="ar" dir="auto" style="font-family:'Tajawal',sans-serif">${escape(ins)}</td>
+      <td class="load-text">${a}</td>
+      <td class="load-text" style="color:var(--ink-faint)">${m}</td>
+      <td class="load-text" style="color:${bal<0?'var(--status-warn)':bal>3?'var(--status-bad)':'var(--status-ok)'}">${bal>=0?'+':''}${bal}</td>
+      <td><div class="loadmeter ${status}"><div class="fill" style="width:${pct}%"></div></div></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('#panel-instructors').innerHTML = html;
+}
+
+// ==================== COURSES PANEL ====================
+function renderCourses() {
+  const map = new Map();
+  state.rows.forEach(r => {
+    const k = r.code;
+    if (!map.has(k)) map.set(k, { code: k, name: r.name, level: r.level, type: r.type, credits: r.credits, sections: 0 });
+    const c = map.get(k);
+    if (r.b1_time) c.sections++;
+    if (r.b2_time) c.sections++;
+  });
+  const list = [...map.values()];
+
+  let html = `
+    <div class="panel-head">
+      <div class="panel-title-block">
+        <div class="panel-num">5</div>
+        <div>
+          <div class="panel-title">${escape(tr('courses_title'))}</div>
+          <div class="panel-sub">${escape(tr('courses_sub'))}</div>
+        </div>
+      </div>
+      <div class="panel-stat">
+        <div>${escape(tr('courses_title'))}</div>
+        <span class="num">${list.length}</span>
+      </div>
+    </div>
+    <table class="list">
+      <thead><tr>
+        <th style="width:110px">${escape(tr('code'))}</th>
+        <th>${escape(tr('course'))}</th>
+        <th style="width:160px">${escape(tr('level'))}</th>
+        <th style="width:100px">${escape(tr('type'))}</th>
+        <th style="width:80px">${escape(tr('credits'))}</th>
+        <th style="width:100px">${escape(tr('sections_count'))}</th>
+      </tr></thead>
+      <tbody>`;
+  list.forEach(c => {
+    html += `<tr>
+      <td class="code-cell">${escape(c.code)}</td>
+      <td><div class="course-name ar" dir="auto">${escape(c.name)}</div></td>
+      <td class="ar" dir="auto" style="color:var(--ink-soft)">${escape(c.level)}</td>
+      <td>${c.type ? `<span class="pill type">${escape(c.type)}</span>` : ''}</td>
+      <td class="load-text" style="color:var(--ink-faint)">${c.credits ?? ''}</td>
+      <td class="load-text">${c.sections}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('#panel-courses').innerHTML = html;
+}
+
+// ==================== EXPORT / IMPORT ====================
+function buildExportRows() {
+  const headers = ['Row','Level','Code','Course','Type','Credits','Days',
+                   'B1 Time','B1 Instructor','B1 Room','B2 Time','B2 Instructor','B2 Room'];
+  const lines = [headers];
+  state.rows.forEach(r => {
+    lines.push([r.row, r.level, r.code, r.name, r.type, r.credits ?? '',
+                r.days, r.b1_time, r.b1_instr, r.b1_room || '',
+                r.b2_time, r.b2_instr, r.b2_room || '']);
+  });
+  return lines;
+}
+function downloadFile(filename, content, type) {
+  const blob = new Blob(['\uFEFF' + content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+function exportAs(fmt) {
+  const lines = buildExportRows();
+  if (fmt === 'csv') {
+    const csv = lines.map(row => row.map(c => {
+      const s = String(c ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',')).join('\n');
+    downloadFile('CY-Schedule.csv', csv, 'text/csv;charset=utf-8');
+    toast(tr('csv_done'));
+  } else if (fmt === 'tsv') {
+    const tsv = lines.map(row => row.map(c => String(c ?? '').replace(/\t/g,' ')).join('\t')).join('\n');
+    downloadFile('CY-Schedule.tsv', tsv, 'text/tab-separated-values;charset=utf-8');
+    toast(tr('tsv_done'));
+  } else if (fmt === 'tsv-clip') {
+    const tsv = lines.map(row => row.map(c => String(c ?? '').replace(/\t/g,' ')).join('\t')).join('\n');
+    navigator.clipboard.writeText(tsv).then(
+      () => toast(tr('tsv_clip_done'), 'success'),
+      () => toast('Copy failed', 'error')
+    );
+  } else if (fmt === 'json') {
+    downloadFile('CY-Schedule.json', JSON.stringify({ rows: state.rows, exportedAt: new Date().toISOString() }, null, 2), 'application/json');
+    toast(tr('json_done'));
+  }
+}
+$('#btn-export').addEventListener('click', () => {
+  $('#menu-export').classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('#btn-export') && !e.target.closest('#menu-export'))
+    $('#menu-export').classList.remove('open');
+});
+$$('#menu-export button').forEach(b => b.addEventListener('click', e => {
+  exportAs(e.target.closest('button').dataset.fmt);
+  $('#menu-export').classList.remove('open');
+}));
+
+$('#btn-import').addEventListener('click', () => $('#file-import').click());
+$('#file-import').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const txt = ev.target.result;
+      let rows;
+      if (file.name.endsWith('.json')) {
+        rows = JSON.parse(txt).rows;
+      } else {
+        const sep = file.name.endsWith('.tsv') ? '\t' : ',';
+        const lines = txt.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim());
+        const parsed = lines.map(l => parseLine(l, sep));
+        const headers = parsed[0];
+        rows = parsed.slice(1).map(p => {
+          const o = {};
+          headers.forEach((h, i) => o[h] = p[i] || '');
+          // map back to internal fields
+          return {
+            row: +o['Row'] || 0,
+            level: o['Level'] || '',
+            code: o['Code'] || '',
+            name: o['Course'] || '',
+            type: o['Type'] || '',
+            credits: o['Credits'] || null,
+            days: o['Days'] || '',
+            b1_time: o['B1 Time'] || '',
+            b1_instr: o['B1 Instructor'] || '',
+            b1_room: o['B1 Room'] || '',
+            b2_time: o['B2 Time'] || '',
+            b2_instr: o['B2 Instructor'] || '',
+            b2_room: o['B2 Room'] || ''
+          };
+        });
+      }
+      if (Array.isArray(rows) && rows.length) {
+        state.rows = rows;
+        toast(typeof tr('imported') === 'function' ? tr('imported')(rows.length) : `Imported ${rows.length}`, 'success');
+        renderActive();
+      } else throw new Error('no rows');
+    } catch (err) {
+      console.error(err);
+      toast(tr('import_failed'), 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+function parseLine(line, sep) {
+  // simple CSV/TSV parser supporting quoted fields
+  if (sep === '\t') return line.split('\t');
+  const out = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQ) {
+      if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === sep) { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+// ==================== PRINT ====================
+$('#btn-print').addEventListener('click', () => {
+  // make all panels visible for print
+  document.body.classList.add('printing');
+  $$('.panel').forEach(p => p.classList.add('active'));
+  // need each panel rendered
+  renderSchedule(); renderConflicts(); renderVersions(); renderInstructors(); renderCourses();
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing');
+      $$('.panel').forEach(p => p.classList.remove('active'));
+      const active = $('.tab.active').dataset.tab;
+      $(`#panel-${active}`).classList.add('active');
+    }, 100);
+  }, 50);
+});
+
+// ==================== LANG TOGGLE ====================
+$('#btn-lang').addEventListener('click', () => {
+  state.lang = state.lang === 'en' ? 'ar' : 'en';
+  applyLang();
+  renderActive();
+});
+function applyLang() {
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+  document.body.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+  $('#btn-lang').textContent = state.lang === 'en' ? 'العربية' : 'English';
+  $$('[data-tr]').forEach(el => {
+    const k = el.dataset.tr;
+    el.textContent = tr(k);
+  });
+}
+
+// ==================== TOAST ====================
+function toast(msg, kind) {
+  const t = $('#toast');
+  t.className = '';
+  t.textContent = msg;
+  if (kind) t.classList.add(kind);
+  requestAnimationFrame(() => t.classList.add('show'));
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ==================== INIT ====================
+applyLang();
+renderActive();
+</script>
+</body>
+</html>
