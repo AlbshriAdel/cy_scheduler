@@ -61,23 +61,19 @@
   .serif { font-family: 'Fraunces', serif; }
 
   button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-  input, select { font: inherit; color: inherit; }
+  input, select, textarea { font: inherit; color: inherit; }
   a { color: var(--accent); }
 
-  /* Focus rings */
-  button:focus-visible, select:focus-visible, input:focus-visible {
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 6px;
   }
 
-  /* ============== TOOLBAR ============== */
+  /* TOOLBAR */
   .toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 14px 24px;
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: var(--radius);
@@ -88,28 +84,17 @@
   .brand { display: flex; align-items: center; gap: 14px; }
   .brand-logo {
     width: 40px; height: 40px;
-    background: var(--accent);
-    color: var(--paper);
+    background: var(--accent); color: var(--paper);
     display: grid; place-items: center;
     border-radius: 10px;
     font-family: 'Geist Mono', monospace;
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: .05em;
+    font-weight: 600; font-size: 13px; letter-spacing: .05em;
   }
-  .brand-title {
-    font-family: 'Fraunces', serif;
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
+  .brand-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
   .brand-sub {
-    font-size: 11px;
-    color: var(--ink-faint);
+    font-size: 11px; color: var(--ink-faint);
     font-family: 'Geist Mono', monospace;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    margin-top: 2px;
+    letter-spacing: .12em; text-transform: uppercase; margin-top: 2px;
   }
   .toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
@@ -119,60 +104,46 @@
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 13px; font-weight: 500;
     color: var(--ink-soft);
     transition: background .15s, border-color .15s, transform .05s;
   }
   .btn:hover { background: var(--card-tint); border-color: var(--ink-faint); }
   .btn:active { transform: translateY(1px); }
-  .btn-primary {
-    background: var(--accent);
-    color: var(--paper);
-    border-color: var(--accent);
-  }
+  .btn-primary { background: var(--accent); color: var(--paper); border-color: var(--accent); }
   .btn-primary:hover { background: var(--accent-soft); border-color: var(--accent-soft); }
   .btn-ghost { background: transparent; border-color: transparent; }
   .btn-ghost:hover { background: var(--paper-warm); }
   .btn-icon { padding: 8px; }
+  .btn-sm { padding: 6px 10px; font-size: 12px; }
   .btn-danger { color: var(--status-bad); }
   .btn-danger:hover { background: var(--status-bad-bg); border-color: var(--status-bad); }
   .btn[disabled] { opacity: .4; cursor: not-allowed; }
 
   .menu-wrap { position: relative; }
   .menu {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
+    position: absolute; top: calc(100% + 6px); right: 0;
     min-width: 180px;
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-lg);
-    padding: 6px;
-    z-index: 20;
-    display: none;
+    padding: 6px; z-index: 20; display: none;
   }
   body[dir="rtl"] .menu { right: auto; left: 0; }
   .menu.open { display: block; }
   .menu-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    color: var(--ink-soft);
+    display: block; width: 100%; text-align: left;
+    padding: 8px 12px; border-radius: 6px;
+    font-size: 13px; color: var(--ink-soft);
   }
   body[dir="rtl"] .menu-item { text-align: right; }
   .menu-item:hover { background: var(--card-tint); color: var(--ink); }
 
-  /* ============== TABS ============== */
+  /* TABS */
   .tabs {
-    display: flex;
-    gap: 4px;
-    margin: 16px 24px 0;
-    padding: 6px;
+    display: flex; gap: 4px;
+    margin: 16px 24px 0; padding: 6px;
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: var(--radius);
@@ -180,90 +151,54 @@
     overflow-x: auto;
   }
   .tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    display: inline-flex; align-items: center; gap: 8px;
     padding: 10px 16px;
     border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 13px; font-weight: 500;
     color: var(--ink-faint);
     white-space: nowrap;
     transition: background .15s, color .15s;
   }
   .tab:hover { background: var(--card-tint); color: var(--ink-soft); }
-  .tab.active {
-    background: var(--accent);
-    color: var(--paper);
-  }
-  .tab-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--ink-faint);
-  }
+  .tab.active { background: var(--accent); color: var(--paper); }
+  .tab-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); }
   .tab.active .tab-dot { background: var(--paper-warm); }
   .tab-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 6px;
     border-radius: 9px;
     background: var(--status-bad-bg);
     color: var(--status-bad);
     font-family: 'Geist Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 11px; font-weight: 600;
   }
   .tab.active .tab-badge { background: var(--paper); color: var(--accent); }
   .tab-badge[data-count="0"] { display: none; }
 
-  /* ============== PANEL ============== */
+  /* PANEL */
   .panel-wrap { padding: 16px 24px 60px; }
   .panel { display: none; }
   .panel.active { display: block; }
-
   .panel-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; margin-bottom: 18px; flex-wrap: wrap;
   }
-  .panel-title {
-    font-family: 'Fraunces', serif;
-    font-size: 26px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--ink);
-  }
-  .panel-sub {
-    font-size: 13px;
-    color: var(--ink-faint);
-    margin-top: 4px;
-  }
+  .panel-title { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+  .panel-sub { font-size: 13px; color: var(--ink-faint); margin-top: 4px; }
   .panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  /* ============== EMPTY STATE ============== */
+  /* EMPTY STATE */
   .empty {
     background: var(--card);
     border: 1px dashed var(--rule);
     border-radius: var(--radius);
-    padding: 60px 24px;
-    text-align: center;
+    padding: 60px 24px; text-align: center;
     color: var(--ink-faint);
   }
-  .empty-title {
-    font-family: 'Fraunces', serif;
-    font-size: 18px;
-    color: var(--ink-soft);
-    margin-bottom: 6px;
-  }
+  .empty-title { font-family: 'Fraunces', serif; font-size: 18px; color: var(--ink-soft); margin-bottom: 6px; }
   .empty-sub { font-size: 13px; margin-bottom: 18px; }
 
-  /* ============== SCHEDULE ============== */
+  /* LEVEL SECTION */
   .level-section {
     background: var(--card);
     border: 1px solid var(--rule);
@@ -273,29 +208,29 @@
     box-shadow: var(--shadow-sm);
   }
   .level-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 16px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--rule-soft);
     flex-wrap: wrap;
   }
-  .level-name {
-    font-family: 'Fraunces', serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--ink);
+  .level-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .level-name { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--ink); }
+  .level-name-input {
+    font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600;
+    background: transparent; border: 1px solid transparent;
+    padding: 4px 8px; border-radius: 6px; min-width: 200px;
   }
+  .level-name-input:hover { border-color: var(--rule); }
+  .level-name-input:focus { border-color: var(--accent); outline: none; }
   .level-meta {
-    font-size: 12px;
-    color: var(--ink-faint);
-    font-family: 'Geist Mono', monospace;
-    letter-spacing: .04em;
+    font-size: 12px; color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace; letter-spacing: .04em;
   }
+  .level-actions { display: flex; gap: 6px; }
 
-  .row-card {
+  /* SECTION CARD */
+  .section-card {
     border: 1px solid var(--rule-soft);
     border-radius: var(--radius-sm);
     padding: 14px;
@@ -303,69 +238,55 @@
     background: var(--card-tint);
     transition: border-color .15s;
   }
-  .row-card:last-child { margin-bottom: 0; }
-  .row-card.has-conflict { border-color: var(--status-bad); background: #FEF6F2; }
+  .section-card:last-child { margin-bottom: 0; }
+  .section-card.has-conflict { border-color: var(--status-bad); background: #FEF6F2; }
 
-  .row-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 10px; flex-wrap: wrap;
   }
-  .row-title {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .row-code {
-    font-family: 'Geist Mono', monospace;
-    font-weight: 600;
-    color: var(--accent);
-    font-size: 14px;
-  }
-  .row-name { font-size: 14px; color: var(--ink); font-weight: 500; }
-  .row-actions { display: flex; gap: 6px; }
+  .section-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .section-code { font-family: 'Geist Mono', monospace; font-weight: 600; color: var(--accent); font-size: 14px; }
+  .section-name { font-size: 14px; color: var(--ink); font-weight: 500; }
+  .section-actions { display: flex; gap: 6px; }
 
   .row-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 10px;
   }
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
   .field-label {
-    font-size: 11px;
-    color: var(--ink-faint);
+    font-size: 11px; color: var(--ink-faint);
     font-family: 'Geist Mono', monospace;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    letter-spacing: .08em; text-transform: uppercase;
   }
-  .field-input,
-  .field-select {
+  .field-input, .field-select {
     padding: 7px 10px;
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: 6px;
-    font-size: 13px;
-    color: var(--ink);
+    font-size: 13px; color: var(--ink);
     width: 100%;
   }
   .field-input:hover, .field-select:hover { border-color: var(--ink-faint); }
-  .field-input.invalid, .field-select.invalid { border-color: var(--status-bad); background: var(--status-bad-bg); }
 
-  .blocks {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 12px;
+  /* BLOCKS */
+  .blocks-wrap { margin-top: 12px; }
+  .blocks-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 8px;
   }
-  @media (max-width: 720px) { .blocks { grid-template-columns: 1fr; } }
+  .blocks-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .blocks-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+  }
   .block {
     border: 1px solid var(--rule-soft);
     border-radius: 6px;
@@ -373,45 +294,35 @@
     background: var(--card);
   }
   .block-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 8px;
   }
   .block-name {
-    font-family: 'Geist Mono', monospace;
-    font-size: 11px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    font-family: 'Geist Mono', monospace; font-size: 11px;
+    letter-spacing: .08em; text-transform: uppercase;
     color: var(--ink-faint);
   }
+  .block-actions { display: flex; gap: 4px; }
 
-  /* ============== STATUS PILL ============== */
+  /* STATUS PILL */
   .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 9px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 600;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
     font-family: 'Geist Mono', monospace;
-    letter-spacing: .04em;
-    text-transform: uppercase;
+    letter-spacing: .04em; text-transform: uppercase;
   }
-  .pill-ok { color: var(--status-ok); background: var(--status-ok-bg); }
+  .pill-ok   { color: var(--status-ok);   background: var(--status-ok-bg); }
   .pill-warn { color: var(--status-warn); background: var(--status-warn-bg); }
-  .pill-bad { color: var(--status-bad); background: var(--status-bad-bg); }
+  .pill-bad  { color: var(--status-bad);  background: var(--status-bad-bg); }
   .pill-info { color: var(--status-info); background: var(--status-info-bg); }
   .pill-mute { color: var(--status-mute); background: var(--status-mute-bg); }
 
-  /* ============== CONFLICTS ============== */
+  /* CONFLICTS */
   .rules-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 12px; margin-bottom: 24px;
   }
   .rule-card {
     background: var(--card);
@@ -419,20 +330,8 @@
     border-radius: var(--radius-sm);
     padding: 14px;
   }
-  .rule-id {
-    font-family: 'Geist Mono', monospace;
-    font-weight: 600;
-    font-size: 11px;
-    color: var(--terra);
-    letter-spacing: .08em;
-  }
-  .rule-title {
-    font-weight: 600;
-    font-size: 14px;
-    margin: 4px 0 6px;
-    color: var(--ink);
-  }
-  .rule-desc { font-size: 12px; color: var(--ink-soft); }
+  .rule-id { font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 11px; color: var(--terra); letter-spacing: .08em; }
+  .rule-title { font-weight: 600; font-size: 14px; margin: 4px 0 6px; color: var(--ink); }
 
   .issues-list {
     background: var(--card);
@@ -443,136 +342,67 @@
   .issue {
     padding: 12px 16px;
     border-bottom: 1px solid var(--rule-soft);
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    flex-wrap: wrap;
+    display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;
   }
   .issue:last-child { border-bottom: none; }
   .issue-meta { font-size: 12px; color: var(--ink-faint); font-family: 'Geist Mono', monospace; }
   .issue-text { font-size: 13px; color: var(--ink); flex: 1; min-width: 200px; }
 
-  /* ============== VERSIONS ============== */
-  .versions-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .snapshot-form {
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    padding: 18px;
-  }
+  /* VERSIONS */
+  .snapshot-form { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: 18px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
   @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
-  .snapshot-list {
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
+  .snapshot-list { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
   .snapshot {
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--rule-soft);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    padding: 14px 18px; border-bottom: 1px solid var(--rule-soft);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   }
   .snapshot:last-child { border-bottom: none; }
   .snapshot.latest { background: var(--card-tint); }
-  .snapshot-version {
-    font-family: 'Geist Mono', monospace;
-    font-weight: 600;
-    color: var(--accent);
-    font-size: 13px;
-  }
+  .snapshot-version { font-family: 'Geist Mono', monospace; font-weight: 600; color: var(--accent); font-size: 13px; }
   .snapshot-info { flex: 1; min-width: 180px; }
   .snapshot-meta { font-size: 12px; color: var(--ink-faint); }
   .snapshot-notes { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
 
-  /* ============== INSTRUCTORS ============== */
-  .table-wrap {
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-  table.data {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
+  /* TABLES */
+  .table-wrap { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
   table.data th {
-    padding: 12px 14px;
-    text-align: left;
-    background: var(--paper-warm);
-    color: var(--ink-soft);
-    font-weight: 600;
-    font-size: 11px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    padding: 12px 14px; text-align: left;
+    background: var(--paper-warm); color: var(--ink-soft);
+    font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
     border-bottom: 1px solid var(--rule);
   }
   body[dir="rtl"] table.data th { text-align: right; }
-  table.data td {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--rule-soft);
-    vertical-align: middle;
-  }
+  table.data td { padding: 12px 14px; border-bottom: 1px solid var(--rule-soft); vertical-align: middle; }
   table.data tr:last-child td { border-bottom: none; }
   table.data tr:hover td { background: var(--card-tint); }
 
-  .load-bar {
-    height: 8px;
-    background: var(--paper-warmer);
-    border-radius: 4px;
-    overflow: hidden;
-    min-width: 80px;
-  }
-  .load-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width .25s;
-  }
-  .load-fill-ok { background: var(--status-ok); }
+  .load-bar { height: 8px; background: var(--paper-warmer); border-radius: 4px; overflow: hidden; min-width: 80px; }
+  .load-bar-fill { height: 100%; border-radius: 4px; transition: width .25s; }
+  .load-fill-ok    { background: var(--status-ok); }
   .load-fill-under { background: var(--status-warn); }
-  .load-fill-over { background: var(--status-bad); }
+  .load-fill-over  { background: var(--status-bad); }
 
   .add-form {
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 16px;
-    display: flex;
-    gap: 10px;
-    align-items: flex-end;
-    flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 16px;
+    display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
   }
   .add-form .field { flex: 1; min-width: 140px; }
 
-  /* ============== TOAST ============== */
+  /* TOAST */
   .toast-stack {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 100;
-    pointer-events: none;
+    position: fixed; bottom: 20px; right: 20px;
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 100; pointer-events: none;
   }
   body[dir="rtl"] .toast-stack { right: auto; left: 20px; }
   .toast {
-    background: var(--accent);
-    color: var(--paper);
-    padding: 10px 16px;
-    border-radius: var(--radius-sm);
+    background: var(--accent); color: var(--paper);
+    padding: 10px 16px; border-radius: var(--radius-sm);
     box-shadow: var(--shadow-lg);
-    font-size: 13px;
-    pointer-events: auto;
+    font-size: 13px; pointer-events: auto;
     animation: toast-in .2s ease-out;
     max-width: 360px;
   }
@@ -581,81 +411,51 @@
   .toast.warn { background: var(--status-warn); }
   @keyframes toast-in {
     from { transform: translateY(8px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(0); opacity: 1; }
   }
 
-  /* ============== MODAL ============== */
+  /* MODAL */
   .modal-backdrop {
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: rgba(26,22,20,.4);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-    padding: 20px;
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; padding: 20px;
   }
   .modal-backdrop.open { display: flex; }
   .modal {
     background: var(--card);
     border-radius: var(--radius);
     box-shadow: var(--shadow-lg);
-    max-width: 480px;
-    width: 100%;
-    overflow: hidden;
+    max-width: 480px; width: 100%; overflow: hidden;
   }
-  .modal-head {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--rule-soft);
-    font-family: 'Fraunces', serif;
-    font-size: 16px;
-    font-weight: 600;
-  }
+  .modal-head { padding: 16px 20px; border-bottom: 1px solid var(--rule-soft); font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; }
   .modal-body { padding: 16px 20px; }
-  .modal-foot {
-    padding: 12px 20px;
-    border-top: 1px solid var(--rule-soft);
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    background: var(--card-tint);
-  }
+  .modal-foot { padding: 12px 20px; border-top: 1px solid var(--rule-soft); display: flex; justify-content: flex-end; gap: 8px; background: var(--card-tint); }
   .modal-field { margin-bottom: 12px; }
   .modal-field label {
-    display: block;
-    font-size: 11px;
-    color: var(--ink-faint);
-    font-family: 'Geist Mono', monospace;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    display: block; font-size: 11px; color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace; letter-spacing: .08em; text-transform: uppercase;
     margin-bottom: 4px;
   }
-  .modal-field input,
-  .modal-field textarea,
-  .modal-field select {
-    width: 100%;
-    padding: 8px 10px;
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: 6px;
-    font-size: 13px;
-    color: var(--ink);
+  .modal-field input, .modal-field textarea, .modal-field select {
+    width: 100%; padding: 8px 10px;
+    background: var(--card); border: 1px solid var(--rule);
+    border-radius: 6px; font-size: 13px; color: var(--ink);
   }
   .modal-field textarea { min-height: 80px; resize: vertical; font-family: inherit; }
 
-  /* ============== PRINT ============== */
+  /* PRINT */
   @media print {
     body { background: white; }
-    .toolbar, .tabs, .panel-actions, .row-actions, .level-head .btn,
+    .toolbar, .tabs, .panel-actions, .section-actions, .level-actions, .block-actions,
     .toast-stack, .modal-backdrop, .add-form, .menu, .snapshot-form { display: none !important; }
     .panel { display: block !important; page-break-after: always; }
     .panel-wrap { padding: 0; }
     .level-section, .rule-card, .issues-list, .table-wrap { box-shadow: none; border-color: #ccc; page-break-inside: avoid; }
-    .row-card { background: white; }
+    .section-card { background: white; }
     .field-select, .field-input { border: none; background: transparent; padding: 0; }
   }
 
-  /* ============== UTILS ============== */
   .stack { display: flex; flex-direction: column; gap: 12px; }
   .row { display: flex; align-items: center; gap: 8px; }
   .grow { flex: 1; }
@@ -681,10 +481,12 @@
     <div class="menu-wrap">
       <button class="btn" id="btnExport" data-i18n="export">Export ▾</button>
       <div class="menu" id="exportMenu" role="menu">
-        <button class="menu-item" data-export="csv">CSV (.csv)</button>
+        <button class="menu-item" data-export="csv">CSV (.csv) · long</button>
+        <button class="menu-item" data-export="csv-wide">CSV (.csv) · wide</button>
         <button class="menu-item" data-export="tsv">TSV (.tsv)</button>
         <button class="menu-item" data-export="json">JSON (.json)</button>
         <button class="menu-item" data-export="copy">Copy as JSON</button>
+        <button class="menu-item" data-export="template">Download template</button>
       </div>
     </div>
     <button class="btn" id="btnPrint" data-i18n="print">Print</button>
@@ -737,11 +539,11 @@
 // CONSTANTS
 // ====================================================================
 
-const STORAGE_STATE = 'cy_sched_state_v2';
-const STORAGE_SNAPS = 'cy_sched_snapshots_v2';
+const STORAGE_STATE = 'cy_sched_state_v3';
+const LEGACY_STATE  = 'cy_sched_state_v2';
+const STORAGE_SNAPS = 'cy_sched_snapshots_v3';
+const LEGACY_SNAPS  = 'cy_sched_snapshots_v2';
 const HISTORY_CAP = 50;
-
-const DAYS = ['U', 'M', 'T', 'W', 'R']; // Sun, Mon, Tue, Wed, Thu
 
 const DAY_PATTERNS = [
   { code: '', label: '—' },
@@ -784,11 +586,11 @@ const TYPES = [
 const RULES = [
   { id: 'R1',  en: 'Each section must declare a level, type, and credits.',
                 ar: 'كل شعبة يجب أن تحدد المستوى والنوع والساعات.' },
-  { id: 'R5',  en: 'No two sections in the same level can run in the same day & time.',
+  { id: 'R5',  en: 'No two blocks in the same level can run in the same day & time.',
                 ar: 'لا يمكن لشعبتين من نفس المستوى أن تتزامنا في نفس اليوم والوقت.' },
-  { id: 'R6',  en: 'No instructor can teach two sections at the same day & time.',
+  { id: 'R6',  en: 'No instructor can teach two blocks at the same day & time.',
                 ar: 'لا يمكن للمدرس أن يدرّس شعبتين في نفس اليوم والوقت.' },
-  { id: 'R7',  en: 'No room can host two sections at the same day & time.',
+  { id: 'R7',  en: 'No room can host two blocks at the same day & time.',
                 ar: 'لا يمكن لقاعة أن تستضيف شعبتين في نفس اليوم والوقت.' },
   { id: 'R8',  en: 'Lecture sections use lecture time slots; labs use lab time slots.',
                 ar: 'الشعب النظرية تستخدم فترات النظري، والعملية تستخدم فترات العملي.' },
@@ -811,19 +613,28 @@ const I18N = {
     tab_versions: 'Versions', tab_instructors: 'Instructors',
     tab_courses: 'Courses',
     schedule_title: 'Schedule',
-    schedule_sub: 'Plan course sections across academic levels.',
-    add_row: '+ Add section',
-    empty_schedule_title: 'No sections yet',
-    empty_schedule_sub: 'Start by adding a course section.',
-    code: 'Code', name: 'Name', level: 'Level', type: 'Type',
+    schedule_sub: 'Levels group sections; each section can have one or more blocks (parallel sections).',
+    add_level: '+ Add level',
+    add_section: '+ Add section',
+    add_block: '+ Add block',
+    empty_schedule_title: 'No levels yet',
+    empty_schedule_sub: 'Start by adding an academic level.',
+    empty_level_sub: 'No sections in this level yet.',
+    level_name: 'Level name',
+    level_name_ph: 'e.g. Level 3, Year 2…',
+    code: 'Code', name: 'Name', type: 'Type',
     credits: 'Credits', days: 'Days', time: 'Time',
     instructor: 'Instructor', room: 'Room',
-    block1: 'Block 1', block2: 'Block 2',
-    delete: 'Delete', clear: 'Clear',
-    confirm_delete_row: 'Delete this section?',
+    block_n: 'Block',
+    delete: 'Delete', clear: 'Clear', remove: 'Remove',
+    confirm_delete_section: 'Delete this section?',
+    confirm_delete_level: 'Delete this level and all its sections?',
+    confirm_delete_block: 'Remove this block?',
+    sections_label: 'Sections',
+    blocks_label: 'Blocks',
     status_blank: 'Blank', status_scheduled: 'Scheduled',
     status_missing_instr: 'No instructor', status_missing_time: 'No time',
-    status_missing_days: 'No days', status_conflict: 'Conflict', status_na: 'N/A',
+    status_missing_days: 'No days', status_conflict: 'Conflict',
     conflicts_title: 'Conflicts',
     conflicts_sub: 'Live validation of scheduling rules.',
     rules_heading: 'Rules',
@@ -848,9 +659,8 @@ const I18N = {
     courses_title: 'Courses',
     courses_sub: 'Catalog auto-derived from current sections.',
     no_courses: 'No courses yet.',
-    sections_count: 'Sections',
+    sections_count: 'Sections', blocks_count: 'Blocks',
     cancel: 'Cancel', save: 'Save',
-    auto_saved: 'Saved',
     snap_created: 'Snapshot created',
     snap_restored: 'Snapshot restored',
     imported: 'Imported',
@@ -865,19 +675,28 @@ const I18N = {
     tab_versions: 'الإصدارات', tab_instructors: 'المدرسون',
     tab_courses: 'المقررات',
     schedule_title: 'الجدول',
-    schedule_sub: 'خطط شعب المقررات عبر المستويات الأكاديمية.',
-    add_row: '+ إضافة شعبة',
-    empty_schedule_title: 'لا توجد شعب بعد',
-    empty_schedule_sub: 'ابدأ بإضافة شعبة مقرر.',
-    code: 'الرمز', name: 'الاسم', level: 'المستوى', type: 'النوع',
+    schedule_sub: 'المستويات تحتوي على شعب، وكل شعبة تحتوي على بلوك أو أكثر (شعب متوازية).',
+    add_level: '+ إضافة مستوى',
+    add_section: '+ إضافة شعبة',
+    add_block: '+ إضافة بلوك',
+    empty_schedule_title: 'لا توجد مستويات بعد',
+    empty_schedule_sub: 'ابدأ بإضافة مستوى أكاديمي.',
+    empty_level_sub: 'لا توجد شعب في هذا المستوى بعد.',
+    level_name: 'اسم المستوى',
+    level_name_ph: 'مثال: المستوى الثالث، السنة الثانية…',
+    code: 'الرمز', name: 'الاسم', type: 'النوع',
     credits: 'الساعات', days: 'الأيام', time: 'الوقت',
     instructor: 'المدرس', room: 'القاعة',
-    block1: 'الفترة 1', block2: 'الفترة 2',
-    delete: 'حذف', clear: 'تفريغ',
-    confirm_delete_row: 'حذف هذه الشعبة؟',
+    block_n: 'بلوك',
+    delete: 'حذف', clear: 'تفريغ', remove: 'إزالة',
+    confirm_delete_section: 'حذف هذه الشعبة؟',
+    confirm_delete_level: 'حذف هذا المستوى وكل شعبه؟',
+    confirm_delete_block: 'إزالة هذا البلوك؟',
+    sections_label: 'الشعب',
+    blocks_label: 'البلوكات',
     status_blank: 'فارغ', status_scheduled: 'مجدول',
     status_missing_instr: 'بدون مدرس', status_missing_time: 'بدون وقت',
-    status_missing_days: 'بدون أيام', status_conflict: 'تعارض', status_na: 'غير متاح',
+    status_missing_days: 'بدون أيام', status_conflict: 'تعارض',
     conflicts_title: 'التعارضات',
     conflicts_sub: 'تحقق فوري من قواعد الجدولة.',
     rules_heading: 'القواعد',
@@ -902,14 +721,13 @@ const I18N = {
     courses_title: 'المقررات',
     courses_sub: 'كتالوج مستخرج من الشعب الحالية.',
     no_courses: 'لا توجد مقررات.',
-    sections_count: 'الشعب',
+    sections_count: 'الشعب', blocks_count: 'البلوكات',
     cancel: 'إلغاء', save: 'حفظ',
-    auto_saved: 'تم الحفظ',
     snap_created: 'تم إنشاء النسخة',
     snap_restored: 'تم الاسترجاع',
     imported: 'تم الاستيراد',
     exported: 'تم التصدير',
-    copied: 'نسخ إلى الحافظة',
+    copied: 'تم النسخ',
   },
 };
 
@@ -920,21 +738,27 @@ const t = (k) => (I18N[State.lang] && I18N[State.lang][k]) || I18N.en[k] || k;
 // ====================================================================
 
 const State = {
-  rows: [],          // { id, code, name, level, type, credits, b1: {days, time, instr, room}, b2: {...} }
-  instructors: [],   // { name, minLoad }
-  snapshots: [],     // { v, reviewer, date, notes, rows, instructors }
+  levels: [],        // [{ id, name }]
+  rows: [],          // [{ id, levelId, code, name, type, credits, days, blocks: [...] }]
+  instructors: [],   // [{ name, minLoad }]
+  snapshots: [],     // [{ v, reviewer, date, notes, levels, rows, instructors }]
   lang: 'en',
-  history: [],       // for undo
-  future: [],        // for redo
+  history: [],
+  future: [],
 };
 
-const newId = () => 'r_' + Math.random().toString(36).slice(2, 9);
+const newId = (p='id') => p + '_' + Math.random().toString(36).slice(2, 9);
 
-const newRow = () => ({
-  id: newId(),
-  code: '', name: '', level: '', type: 'lecture', credits: 3,
-  b1: { days: '', time: '', instr: '', room: '' },
-  b2: { days: '', time: '', instr: '', room: '' },
+const newLevel = (name = '') => ({ id: newId('lv'), name });
+
+const newBlock = () => ({ id: newId('bk'), time: '', instr: '', room: '' });
+
+const newSection = (levelId) => ({
+  id: newId('sc'),
+  levelId,
+  code: '', name: '', type: 'lecture', credits: 3,
+  days: '',
+  blocks: [newBlock()],
 });
 
 // ====================================================================
@@ -945,13 +769,17 @@ const Storage = {
   loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_STATE);
-      if (!raw) return null;
-      return JSON.parse(raw);
+      if (raw) return JSON.parse(raw);
+      // Migrate from v2
+      const legacy = localStorage.getItem(LEGACY_STATE);
+      if (legacy) return migrateV2(JSON.parse(legacy));
+      return null;
     } catch (e) { return null; }
   },
   saveState() {
     try {
       const data = {
+        levels: State.levels,
         rows: State.rows,
         instructors: State.instructors,
         lang: State.lang,
@@ -962,8 +790,10 @@ const Storage = {
   loadSnapshots() {
     try {
       const raw = localStorage.getItem(STORAGE_SNAPS);
-      if (!raw) return [];
-      return JSON.parse(raw);
+      if (raw) return JSON.parse(raw);
+      const legacy = localStorage.getItem(LEGACY_SNAPS);
+      if (legacy) return JSON.parse(legacy);
+      return [];
     } catch (e) { return []; }
   },
   saveSnapshots() {
@@ -972,6 +802,46 @@ const Storage = {
   },
 };
 
+// Convert v2 (b1/b2 with level string) → v3 (levels[] + blocks[])
+function migrateV2(v2) {
+  const levels = [];
+  const levelByName = new Map();
+  const ensureLevel = (name) => {
+    const key = name || '—';
+    if (levelByName.has(key)) return levelByName.get(key);
+    const lv = newLevel(key);
+    levelByName.set(key, lv);
+    levels.push(lv);
+    return lv;
+  };
+  const rows = (v2.rows || []).map(r => {
+    const lv = ensureLevel(r.level || '');
+    const blocks = [];
+    if (r.b1 && (r.b1.time || r.b1.instr || r.b1.room)) {
+      blocks.push({ id: newId('bk'), time: r.b1.time || '', instr: r.b1.instr || '', room: r.b1.room || '' });
+    }
+    if (r.b2 && (r.b2.time || r.b2.instr || r.b2.room)) {
+      blocks.push({ id: newId('bk'), time: r.b2.time || '', instr: r.b2.instr || '', room: r.b2.room || '' });
+    }
+    if (blocks.length === 0) blocks.push(newBlock());
+    const days = (r.b1 && r.b1.days) || (r.b2 && r.b2.days) || '';
+    return {
+      id: r.id || newId('sc'),
+      levelId: lv.id,
+      code: r.code || '', name: r.name || '',
+      type: r.type || 'lecture',
+      credits: r.credits || 0,
+      days,
+      blocks,
+    };
+  });
+  return {
+    levels, rows,
+    instructors: v2.instructors || [],
+    lang: v2.lang || 'en',
+  };
+}
+
 let saveTimer = null;
 const debouncedSave = () => {
   clearTimeout(saveTimer);
@@ -979,36 +849,40 @@ const debouncedSave = () => {
 };
 
 // ====================================================================
-// HISTORY (Undo / Redo)
+// HISTORY
 // ====================================================================
 
 const History = {
   snapshot() {
-    const s = JSON.stringify({ rows: State.rows, instructors: State.instructors });
+    const s = JSON.stringify({
+      levels: State.levels, rows: State.rows, instructors: State.instructors,
+    });
     State.history.push(s);
     if (State.history.length > HISTORY_CAP) State.history.shift();
     State.future.length = 0;
     updateHistoryButtons();
   },
-  undo() {
-    if (State.history.length === 0) return false;
-    const current = JSON.stringify({ rows: State.rows, instructors: State.instructors });
-    State.future.push(current);
-    const prev = State.history.pop();
-    const data = JSON.parse(prev);
+  apply(json) {
+    const data = JSON.parse(json);
+    State.levels = data.levels;
     State.rows = data.rows;
     State.instructors = data.instructors;
+  },
+  undo() {
+    if (State.history.length === 0) return false;
+    State.future.push(JSON.stringify({
+      levels: State.levels, rows: State.rows, instructors: State.instructors,
+    }));
+    History.apply(State.history.pop());
     updateHistoryButtons();
     return true;
   },
   redo() {
     if (State.future.length === 0) return false;
-    const current = JSON.stringify({ rows: State.rows, instructors: State.instructors });
-    State.history.push(current);
-    const next = State.future.pop();
-    const data = JSON.parse(next);
-    State.rows = data.rows;
-    State.instructors = data.instructors;
+    State.history.push(JSON.stringify({
+      levels: State.levels, rows: State.rows, instructors: State.instructors,
+    }));
+    History.apply(State.future.pop());
     updateHistoryButtons();
     return true;
   },
@@ -1019,16 +893,12 @@ function updateHistoryButtons() {
   document.getElementById('btnRedo').disabled = State.future.length === 0;
 }
 
-// Wrap a mutation so that history is recorded and storage is auto-saved.
 function mutate(fn) {
   History.snapshot();
   fn();
   debouncedSave();
 }
 
-// Like mutate() but coalesces rapid edits (e.g. keystrokes) into a single
-// history entry. The first call within the idle window snapshots; later calls
-// only update state until the user pauses.
 let coalesceTimer = null;
 function mutateCoalesced(fn) {
   if (coalesceTimer === null) History.snapshot();
@@ -1042,39 +912,26 @@ function mutateCoalesced(fn) {
 // RULES / CONFLICTS
 // ====================================================================
 
-function slotsFor(type) {
-  return type === 'lab' ? LAB_SLOTS : LECTURE_SLOTS;
-}
+const slotsFor = (type) => type === 'lab' ? LAB_SLOTS : LECTURE_SLOTS;
+const findSlot = (type, code) => slotsFor(type).find(s => s.code === code) || null;
+const rangesOverlap = (a, b) => a.start < b.end && b.start < a.end;
+const expandDays = (s) => s ? s.split(',').map(x => x.trim()).filter(Boolean) : [];
 
-function findSlot(type, code) {
-  return slotsFor(type).find(s => s.code === code) || null;
-}
-
-function rangesOverlap(a, b) {
-  return a.start < b.end && b.start < a.end;
-}
-
-function expandDays(daysStr) {
-  if (!daysStr) return [];
-  return daysStr.split(',').map(s => s.trim()).filter(Boolean);
-}
-
-// Build flat session list from rows.
 function buildSessions() {
   const out = [];
   State.rows.forEach(r => {
-    ['b1', 'b2'].forEach(bk => {
-      const blk = r[bk];
-      if (!blk || !blk.time || !blk.days) return;
-      const slot = findSlot(r.type, blk.time);
+    if (!r.days) return;
+    const days = expandDays(r.days);
+    r.blocks.forEach(b => {
+      if (!b.time) return;
+      const slot = findSlot(r.type, b.time);
       if (!slot) return;
-      const days = expandDays(blk.days);
       days.forEach(day => {
         out.push({
-          rowId: r.id, block: bk, day,
+          rowId: r.id, blockId: b.id, day,
           start: slot.start, end: slot.end,
-          level: r.level, type: r.type,
-          instr: blk.instr, room: blk.room,
+          levelId: r.levelId, type: r.type,
+          instr: b.instr, room: b.room,
         });
       });
     });
@@ -1082,11 +939,10 @@ function buildSessions() {
   return out;
 }
 
-// Detect conflicts; returns { issues, byBlock } where byBlock maps "rowId|b1" => true.
 function detectConflicts() {
   const sessions = buildSessions();
   const issues = [];
-  const byBlock = new Set();
+  const byBlock = new Set(); // "rowId|blockId"
 
   for (let i = 0; i < sessions.length; i++) {
     for (let j = i + 1; j < sessions.length; j++) {
@@ -1094,55 +950,51 @@ function detectConflicts() {
       if (a.day !== b.day) continue;
       if (!rangesOverlap(a, b)) continue;
 
-      // R5: same level (excluding online)
-      if (a.level && a.level === b.level && a.type !== 'online' && b.type !== 'online') {
+      const lvName = (id) => (State.levels.find(l => l.id === id) || {}).name || '—';
+
+      if (a.levelId && a.levelId === b.levelId && a.type !== 'online' && b.type !== 'online') {
         issues.push({ rule: 'R5', day: a.day,
-          reason: `Level "${a.level}" has overlapping sessions.`,
-          a: a.rowId + '|' + a.block, b: b.rowId + '|' + b.block });
-        byBlock.add(a.rowId + '|' + a.block);
-        byBlock.add(b.rowId + '|' + b.block);
+          reason: `Level "${lvName(a.levelId)}" has overlapping sessions.`,
+          a: a.rowId + '|' + a.blockId, b: b.rowId + '|' + b.blockId });
+        byBlock.add(a.rowId + '|' + a.blockId);
+        byBlock.add(b.rowId + '|' + b.blockId);
       }
-      // R6: same instructor
       if (a.instr && a.instr === b.instr) {
         issues.push({ rule: 'R6', day: a.day,
           reason: `Instructor "${a.instr}" is double-booked.`,
-          a: a.rowId + '|' + a.block, b: b.rowId + '|' + b.block });
-        byBlock.add(a.rowId + '|' + a.block);
-        byBlock.add(b.rowId + '|' + b.block);
+          a: a.rowId + '|' + a.blockId, b: b.rowId + '|' + b.blockId });
+        byBlock.add(a.rowId + '|' + a.blockId);
+        byBlock.add(b.rowId + '|' + b.blockId);
       }
-      // R7: same room (excluding online)
       if (a.room && a.room === b.room && a.type !== 'online' && b.type !== 'online') {
         issues.push({ rule: 'R7', day: a.day,
           reason: `Room "${a.room}" is double-booked.`,
-          a: a.rowId + '|' + a.block, b: b.rowId + '|' + b.block });
-        byBlock.add(a.rowId + '|' + a.block);
-        byBlock.add(b.rowId + '|' + b.block);
+          a: a.rowId + '|' + a.blockId, b: b.rowId + '|' + b.blockId });
+        byBlock.add(a.rowId + '|' + a.blockId);
+        byBlock.add(b.rowId + '|' + b.blockId);
       }
     }
   }
   return { issues, byBlock };
 }
 
-function blockStatus(row, blockKey, conflictBlocks) {
-  const blk = row[blockKey];
-  if (blockKey === 'b2' && row.type === 'lab') return 'na'; // labs single block
-  const filled = blk.days || blk.time || blk.instr || blk.room;
-  if (!filled) return 'blank';
-  if (conflictBlocks.has(row.id + '|' + blockKey)) return 'conflict';
-  if (!blk.days) return 'missing-days';
-  if (!blk.time) return 'missing-time';
-  if (!blk.instr) return 'missing-instr';
+function blockStatus(row, block, conflictBlocks) {
+  const filled = block.time || block.instr || block.room;
+  if (!filled && !row.days) return 'blank';
+  if (conflictBlocks.has(row.id + '|' + block.id)) return 'conflict';
+  if (!row.days) return 'missing-days';
+  if (!block.time) return 'missing-time';
+  if (!block.instr) return 'missing-instr';
   return 'scheduled';
 }
 
 const STATUS_LABELS = {
-  'blank': { key: 'status_blank', cls: 'pill-mute' },
-  'scheduled': { key: 'status_scheduled', cls: 'pill-ok' },
-  'missing-days': { key: 'status_missing_days', cls: 'pill-warn' },
-  'missing-time': { key: 'status_missing_time', cls: 'pill-warn' },
+  'blank':         { key: 'status_blank',         cls: 'pill-mute' },
+  'scheduled':     { key: 'status_scheduled',     cls: 'pill-ok' },
+  'missing-days':  { key: 'status_missing_days',  cls: 'pill-warn' },
+  'missing-time':  { key: 'status_missing_time',  cls: 'pill-warn' },
   'missing-instr': { key: 'status_missing_instr', cls: 'pill-warn' },
-  'conflict': { key: 'status_conflict', cls: 'pill-bad' },
-  'na': { key: 'status_na', cls: 'pill-mute' },
+  'conflict':      { key: 'status_conflict',      cls: 'pill-bad' },
 };
 
 // ====================================================================
@@ -1206,15 +1058,20 @@ function modal({ title, body, onConfirm, confirmLabel, danger }) {
   back.onclick = (e) => { if (e.target === back) close(); };
 }
 
-// ====================================================================
-// RENDER: SCHEDULE
-// ====================================================================
-
 function applyI18nLabels() {
   document.querySelectorAll('[data-i18n]').forEach(n => {
     n.textContent = t(n.getAttribute('data-i18n'));
   });
 }
+
+function statusPill(status) {
+  const meta = STATUS_LABELS[status];
+  return el('span', { class: 'pill ' + meta.cls }, t(meta.key));
+}
+
+// ====================================================================
+// RENDER ROOT
+// ====================================================================
 
 function render() {
   renderSchedule();
@@ -1224,75 +1081,6 @@ function render() {
   renderCourses();
   applyI18nLabels();
   updateHistoryButtons();
-}
-
-function instructorOptions() {
-  const names = State.instructors.map(i => i.name);
-  // also include any names in rows that are not in the instructor list
-  State.rows.forEach(r => {
-    [r.b1.instr, r.b2.instr].forEach(n => {
-      if (n && !names.includes(n)) names.push(n);
-    });
-  });
-  return names;
-}
-
-function levelOptions() {
-  const set = new Set();
-  State.rows.forEach(r => { if (r.level) set.add(r.level); });
-  return Array.from(set);
-}
-
-function statusPill(status) {
-  const meta = STATUS_LABELS[status];
-  return el('span', { class: 'pill ' + meta.cls }, t(meta.key));
-}
-
-function renderSchedule() {
-  const panel = document.getElementById('panel-schedule');
-  clear(panel);
-
-  panel.appendChild(renderPanelHeader({
-    title: t('schedule_title'),
-    sub: t('schedule_sub'),
-    actions: [
-      el('button', {
-        class: 'btn btn-primary',
-        onclick: addRow,
-      }, t('add_row')),
-    ],
-  }));
-
-  if (State.rows.length === 0) {
-    panel.appendChild(el('div', { class: 'empty' },
-      el('div', { class: 'empty-title' }, t('empty_schedule_title')),
-      el('div', { class: 'empty-sub' }, t('empty_schedule_sub')),
-      el('button', { class: 'btn btn-primary', onclick: addRow }, t('add_row')),
-    ));
-    return;
-  }
-
-  const { byBlock } = detectConflicts();
-
-  // Group by level
-  const groups = new Map();
-  State.rows.forEach(r => {
-    const k = r.level || '—';
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k).push(r);
-  });
-
-  groups.forEach((rows, level) => {
-    const section = el('div', { class: 'level-section' });
-    section.appendChild(el('div', { class: 'level-head' },
-      el('div', {},
-        el('div', { class: 'level-name' }, level),
-        el('div', { class: 'level-meta' }, `${rows.length} section${rows.length === 1 ? '' : 's'}`),
-      ),
-    ));
-    rows.forEach(r => section.appendChild(renderRowCard(r, byBlock)));
-    panel.appendChild(section);
-  });
 }
 
 function renderPanelHeader({ title, sub, actions }) {
@@ -1305,52 +1093,141 @@ function renderPanelHeader({ title, sub, actions }) {
   );
 }
 
-function renderRowCard(row, conflictBlocks) {
-  const hasConflict =
-    conflictBlocks.has(row.id + '|b1') || conflictBlocks.has(row.id + '|b2');
+// ====================================================================
+// SCHEDULE
+// ====================================================================
 
-  const card = el('div', {
-    class: 'row-card' + (hasConflict ? ' has-conflict' : ''),
-    'data-row': row.id,
+function instructorOptions() {
+  const names = State.instructors.map(i => i.name);
+  State.rows.forEach(r => r.blocks.forEach(b => {
+    if (b.instr && !names.includes(b.instr)) names.push(b.instr);
+  }));
+  return names;
+}
+
+function renderSchedule() {
+  const panel = document.getElementById('panel-schedule');
+  clear(panel);
+
+  panel.appendChild(renderPanelHeader({
+    title: t('schedule_title'),
+    sub: t('schedule_sub'),
+    actions: [
+      el('button', { class: 'btn btn-primary', onclick: addLevel }, t('add_level')),
+    ],
+  }));
+
+  if (State.levels.length === 0) {
+    panel.appendChild(el('div', { class: 'empty' },
+      el('div', { class: 'empty-title' }, t('empty_schedule_title')),
+      el('div', { class: 'empty-sub' }, t('empty_schedule_sub')),
+      el('button', { class: 'btn btn-primary', onclick: addLevel }, t('add_level')),
+    ));
+    return;
+  }
+
+  const { byBlock } = detectConflicts();
+
+  State.levels.forEach(level => {
+    panel.appendChild(renderLevel(level, byBlock));
   });
+}
+
+function renderLevel(level, conflictBlocks) {
+  const sections = State.rows.filter(r => r.levelId === level.id);
+
+  const card = el('div', { class: 'level-section', 'data-level': level.id });
 
   // Head
-  card.appendChild(el('div', { class: 'row-head' },
-    el('div', { class: 'row-title' },
-      el('span', { class: 'row-code' }, row.code || '—'),
-      el('span', { class: 'row-name' }, row.name || ''),
+  const nameInp = el('input', {
+    class: 'level-name-input',
+    type: 'text',
+    value: level.name,
+    placeholder: t('level_name_ph'),
+    'aria-label': t('level_name'),
+  });
+  nameInp.addEventListener('input', (e) => {
+    mutateCoalesced(() => { level.name = e.target.value; });
+  });
+
+  card.appendChild(el('div', { class: 'level-head' },
+    el('div', { class: 'level-title-row' },
+      nameInp,
+      el('span', { class: 'level-meta' },
+        `${sections.length} ${t('sections_count').toLowerCase()}`),
     ),
-    el('div', { class: 'row-actions' },
-      el('button', { class: 'btn btn-ghost btn-icon', title: t('delete'),
-        onclick: () => confirmDeleteRow(row.id) }, '✕'),
+    el('div', { class: 'level-actions' },
+      el('button', {
+        class: 'btn btn-sm',
+        onclick: () => addSection(level.id),
+      }, t('add_section')),
+      el('button', {
+        class: 'btn btn-sm btn-ghost',
+        title: t('delete'),
+        onclick: () => confirmDeleteLevel(level.id),
+      }, '✕'),
     ),
   ));
 
-  // Meta grid
+  if (sections.length === 0) {
+    card.appendChild(el('div', { style: 'padding:14px 4px; font-size:13px; color:var(--ink-faint);' },
+      t('empty_level_sub'),
+    ));
+  } else {
+    sections.forEach(sec => card.appendChild(renderSection(sec, conflictBlocks)));
+  }
+
+  return card;
+}
+
+function renderSection(section, conflictBlocks) {
+  const hasConflict = section.blocks.some(b => conflictBlocks.has(section.id + '|' + b.id));
+
+  const card = el('div', {
+    class: 'section-card' + (hasConflict ? ' has-conflict' : ''),
+    'data-section': section.id,
+  });
+
+  // Head
+  card.appendChild(el('div', { class: 'section-head' },
+    el('div', { class: 'section-title' },
+      el('span', { class: 'section-code' }, section.code || '—'),
+      el('span', { class: 'section-name' }, section.name || ''),
+    ),
+    el('div', { class: 'section-actions' },
+      el('button', {
+        class: 'btn btn-ghost btn-icon',
+        title: t('delete'),
+        onclick: () => confirmDeleteSection(section.id),
+      }, '✕'),
+    ),
+  ));
+
+  // Meta
   const grid = el('div', { class: 'row-grid' });
-  grid.appendChild(makeField(t('code'), inputField(row, 'code')));
-  grid.appendChild(makeField(t('name'), inputField(row, 'name')));
-  grid.appendChild(makeField(t('level'), levelField(row)));
-  grid.appendChild(makeField(t('type'), typeField(row)));
-  grid.appendChild(makeField(t('credits'), numField(row, 'credits')));
+  grid.appendChild(makeField(t('code'), textInput(section, 'code')));
+  grid.appendChild(makeField(t('name'), textInput(section, 'name')));
+  grid.appendChild(makeField(t('type'), typeSelect(section)));
+  grid.appendChild(makeField(t('credits'), numInput(section, 'credits')));
+  grid.appendChild(makeField(t('days'), daysSelect(section)));
   card.appendChild(grid);
 
   // Blocks
-  const blocks = el('div', { class: 'blocks' });
-  blocks.appendChild(renderBlock(row, 'b1', conflictBlocks));
-  if (row.type !== 'lab') {
-    blocks.appendChild(renderBlock(row, 'b2', conflictBlocks));
-  } else {
-    blocks.appendChild(el('div', { class: 'block', style: 'opacity:.5' },
-      el('div', { class: 'block-head' },
-        el('span', { class: 'block-name' }, t('block2')),
-        statusPill('na'),
-      ),
-      el('div', { style: 'font-size:12px; color:var(--ink-faint); padding:8px 0;' },
-        'Lab uses single block.'),
-    ));
-  }
-  card.appendChild(blocks);
+  const blocksWrap = el('div', { class: 'blocks-wrap' });
+  blocksWrap.appendChild(el('div', { class: 'blocks-header' },
+    el('span', { class: 'blocks-label' },
+      `${t('blocks_label')} · ${section.blocks.length}`),
+    el('button', {
+      class: 'btn btn-sm',
+      onclick: () => addBlock(section.id),
+    }, t('add_block')),
+  ));
+  const list = el('div', { class: 'blocks-list' });
+  section.blocks.forEach((blk, idx) => {
+    list.appendChild(renderBlock(section, blk, idx, conflictBlocks));
+  });
+  blocksWrap.appendChild(list);
+  card.appendChild(blocksWrap);
 
   return card;
 }
@@ -1362,74 +1239,44 @@ function makeField(label, input) {
   );
 }
 
-function inputField(row, key) {
+function textInput(section, key) {
   const inp = el('input', {
     class: 'field-input',
     type: 'text',
-    value: row[key] || '',
+    value: section[key] || '',
   });
   inp.addEventListener('input', (e) => {
-    mutateCoalesced(() => { row[key] = e.target.value; });
-    if (key === 'code' || key === 'name') updateRowHead(row);
+    mutateCoalesced(() => { section[key] = e.target.value; });
+    if (key === 'code' || key === 'name') updateSectionHead(section);
   });
   return inp;
 }
 
-function numField(row, key) {
+function numInput(section, key) {
   const inp = el('input', {
     class: 'field-input',
-    type: 'number',
-    min: '0',
-    step: '1',
-    value: row[key] != null ? row[key] : '',
+    type: 'number', min: '0', step: '1',
+    value: section[key] != null ? section[key] : '',
   });
   inp.addEventListener('input', (e) => {
-    mutateCoalesced(() => { row[key] = parseInt(e.target.value, 10) || 0; });
+    mutateCoalesced(() => { section[key] = parseInt(e.target.value, 10) || 0; });
   });
   return inp;
 }
 
-function levelField(row) {
-  // Use a datalist so users can pick existing or type new
-  const wrap = document.createElement('div');
-  wrap.style.position = 'relative';
-  const inp = el('input', {
-    class: 'field-input',
-    list: 'level-options',
-    value: row.level || '',
-  });
-  inp.addEventListener('change', (e) => {
-    mutate(() => { row.level = e.target.value; });
-    renderSchedule(); // regroup
-  });
-  // Ensure the datalist exists
-  let dl = document.getElementById('level-options');
-  if (!dl) {
-    dl = el('datalist', { id: 'level-options' });
-    document.body.appendChild(dl);
-  }
-  clear(dl);
-  levelOptions().forEach(opt => dl.appendChild(el('option', { value: opt })));
-  wrap.appendChild(inp);
-  return wrap;
-}
-
-function typeField(row) {
+function typeSelect(section) {
   const sel = el('select', { class: 'field-select' });
-  TYPES.forEach(type => {
-    const opt = el('option', { value: type.code }, State.lang === 'ar' ? type.ar : type.en);
-    if (row.type === type.code) opt.selected = true;
+  TYPES.forEach(typ => {
+    const opt = el('option', { value: typ.code }, State.lang === 'ar' ? typ.ar : typ.en);
+    if (section.type === typ.code) opt.selected = true;
     sel.appendChild(opt);
   });
   sel.addEventListener('change', (e) => {
     mutate(() => {
-      row.type = e.target.value;
-      // Reset times if slot codes don't apply
-      if (!findSlot(row.type, row.b1.time)) row.b1.time = '';
-      if (!findSlot(row.type, row.b2.time)) row.b2.time = '';
-      if (row.type === 'lab') {
-        row.b2 = { days: '', time: '', instr: '', room: '' };
-      }
+      section.type = e.target.value;
+      section.blocks.forEach(b => {
+        if (!findSlot(section.type, b.time)) b.time = '';
+      });
     });
     renderSchedule();
     updateConflictBadge();
@@ -1437,128 +1284,122 @@ function typeField(row) {
   return sel;
 }
 
-function renderBlock(row, blockKey, conflictBlocks) {
-  const blk = row[blockKey];
-  const status = blockStatus(row, blockKey, conflictBlocks);
-
-  const wrap = el('div', { class: 'block', 'data-block': blockKey });
-  wrap.appendChild(el('div', { class: 'block-head' },
-    el('span', { class: 'block-name' }, t(blockKey === 'b1' ? 'block1' : 'block2')),
-    statusPill(status),
-  ));
-
-  const grid = el('div', { class: 'row-grid' });
-  grid.appendChild(makeField(t('days'), daysSelect(row, blockKey)));
-  grid.appendChild(makeField(t('time'), timeSelect(row, blockKey)));
-  grid.appendChild(makeField(t('instructor'), instrSelect(row, blockKey)));
-  grid.appendChild(makeField(t('room'), roomInput(row, blockKey)));
-  wrap.appendChild(grid);
-
-  // Clear button
-  const filled = blk.days || blk.time || blk.instr || blk.room;
-  if (filled) {
-    wrap.appendChild(el('button', {
-      class: 'btn btn-ghost',
-      style: 'margin-top:8px; font-size:12px;',
-      onclick: () => clearBlock(row, blockKey),
-    }, t('clear')));
-  }
-  return wrap;
-}
-
-function daysSelect(row, blockKey) {
+function daysSelect(section) {
   const sel = el('select', { class: 'field-select' });
   DAY_PATTERNS.forEach(p => {
     const opt = el('option', { value: p.code }, p.label);
-    if (row[blockKey].days === p.code) opt.selected = true;
+    if (section.days === p.code) opt.selected = true;
     sel.appendChild(opt);
   });
   sel.addEventListener('change', (e) => {
-    mutate(() => { row[blockKey].days = e.target.value; });
-    refreshAfterEdit(row);
+    mutate(() => { section.days = e.target.value; });
+    refreshAfterEdit();
   });
   return sel;
 }
 
-function timeSelect(row, blockKey) {
+function renderBlock(section, block, idx, conflictBlocks) {
+  const status = blockStatus(section, block, conflictBlocks);
+
+  const wrap = el('div', { class: 'block', 'data-block': block.id });
+
+  const actions = el('div', { class: 'block-actions' });
+  if (section.blocks.length > 1) {
+    actions.appendChild(el('button', {
+      class: 'btn btn-ghost btn-icon',
+      title: t('remove'),
+      onclick: () => removeBlock(section.id, block.id),
+    }, '✕'));
+  }
+
+  wrap.appendChild(el('div', { class: 'block-head' },
+    el('span', { class: 'block-name' }, `${t('block_n')} ${idx + 1}`),
+    el('div', { class: 'row', style: 'gap:6px;' }, statusPill(status), actions),
+  ));
+
+  const grid = el('div', { class: 'row-grid' });
+  grid.appendChild(makeField(t('time'),       blockTimeSelect(section, block)));
+  grid.appendChild(makeField(t('instructor'), blockInstrSelect(block)));
+  grid.appendChild(makeField(t('room'),       blockRoomInput(block)));
+  wrap.appendChild(grid);
+
+  return wrap;
+}
+
+function blockTimeSelect(section, block) {
   const sel = el('select', { class: 'field-select' });
   sel.appendChild(el('option', { value: '' }, '—'));
-  slotsFor(row.type).forEach(s => {
+  slotsFor(section.type).forEach(s => {
     const opt = el('option', { value: s.code }, s.code);
-    if (row[blockKey].time === s.code) opt.selected = true;
+    if (block.time === s.code) opt.selected = true;
     sel.appendChild(opt);
   });
   sel.addEventListener('change', (e) => {
-    mutate(() => { row[blockKey].time = e.target.value; });
-    refreshAfterEdit(row);
+    mutate(() => { block.time = e.target.value; });
+    refreshAfterEdit();
   });
   return sel;
 }
 
-function instrSelect(row, blockKey) {
+function blockInstrSelect(block) {
   const sel = el('select', { class: 'field-select' });
   sel.appendChild(el('option', { value: '' }, '—'));
   instructorOptions().forEach(name => {
     const opt = el('option', { value: name }, name);
-    if (row[blockKey].instr === name) opt.selected = true;
+    if (block.instr === name) opt.selected = true;
     sel.appendChild(opt);
   });
   sel.addEventListener('change', (e) => {
-    mutate(() => { row[blockKey].instr = e.target.value; });
-    refreshAfterEdit(row);
+    mutate(() => { block.instr = e.target.value; });
+    refreshAfterEdit();
   });
   return sel;
 }
 
-function roomInput(row, blockKey) {
+function blockRoomInput(block) {
   const inp = el('input', {
-    class: 'field-input',
-    type: 'text',
-    value: row[blockKey].room || '',
-    placeholder: '—',
+    class: 'field-input', type: 'text',
+    value: block.room || '', placeholder: '—',
   });
   inp.addEventListener('input', (e) => {
-    mutateCoalesced(() => { row[blockKey].room = e.target.value; });
+    mutateCoalesced(() => { block.room = e.target.value; });
   });
-  inp.addEventListener('change', () => refreshAfterEdit(row));
+  inp.addEventListener('change', () => refreshAfterEdit());
   return inp;
 }
 
 // ====================================================================
-// SCHEDULE EDIT HELPERS (targeted updates)
+// SCHEDULE: TARGETED UPDATES
 // ====================================================================
 
-function updateRowHead(row) {
-  const card = document.querySelector(`[data-row="${row.id}"]`);
+function updateSectionHead(section) {
+  const card = document.querySelector(`[data-section="${section.id}"]`);
   if (!card) return;
-  const codeEl = card.querySelector('.row-code');
-  const nameEl = card.querySelector('.row-name');
-  if (codeEl) codeEl.textContent = row.code || '—';
-  if (nameEl) nameEl.textContent = row.name || '';
+  const codeEl = card.querySelector('.section-code');
+  const nameEl = card.querySelector('.section-name');
+  if (codeEl) codeEl.textContent = section.code || '—';
+  if (nameEl) nameEl.textContent = section.name || '';
 }
 
-// Re-render a single row's status pills + conflict badge counts.
-function refreshAfterEdit(row) {
+function refreshAfterEdit() {
   const { byBlock, issues } = detectConflicts();
-  // Update all row cards' conflict styling and pill
-  document.querySelectorAll('.row-card').forEach(card => {
-    const id = card.getAttribute('data-row');
-    const r = State.rows.find(x => x.id === id);
-    if (!r) return;
-    const has = byBlock.has(id + '|b1') || byBlock.has(id + '|b2');
+  document.querySelectorAll('.section-card').forEach(card => {
+    const id = card.getAttribute('data-section');
+    const sec = State.rows.find(r => r.id === id);
+    if (!sec) return;
+    const has = sec.blocks.some(b => byBlock.has(id + '|' + b.id));
     card.classList.toggle('has-conflict', has);
-    ['b1', 'b2'].forEach(bk => {
-      const blockEl = card.querySelector(`[data-block="${bk}"]`);
-      if (!blockEl) return;
-      const pill = blockEl.querySelector('.pill');
+    sec.blocks.forEach(b => {
+      const blkEl = card.querySelector(`[data-block="${b.id}"]`);
+      if (!blkEl) return;
+      const pill = blkEl.querySelector('.pill');
       if (pill) {
-        const newPill = statusPill(blockStatus(r, bk, byBlock));
-        pill.replaceWith(newPill);
+        const np = statusPill(blockStatus(sec, b, byBlock));
+        pill.replaceWith(np);
       }
     });
   });
   setConflictBadge(issues.length);
-  // Don't re-render the conflicts panel unless it's visible (lazy)
   if (document.getElementById('panel-conflicts').classList.contains('active')) {
     renderConflicts();
   }
@@ -1575,50 +1416,89 @@ function updateConflictBadge() {
 }
 
 // ====================================================================
-// SCHEDULE: CRUD ACTIONS
+// SCHEDULE: CRUD
 // ====================================================================
 
-function addRow() {
-  mutate(() => { State.rows.push(newRow()); });
+function addLevel() {
+  mutate(() => { State.levels.push(newLevel('')); });
   renderSchedule();
   updateConflictBadge();
+  // Focus the new level's name input
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.level-section');
+    const last = cards[cards.length - 1];
+    if (last) last.querySelector('.level-name-input').focus();
+  }, 50);
 }
 
-function confirmDeleteRow(id) {
+function confirmDeleteLevel(levelId) {
+  const lv = State.levels.find(l => l.id === levelId);
+  if (!lv) return;
+  const count = State.rows.filter(r => r.levelId === levelId).length;
   modal({
-    title: t('confirm_delete_row'),
-    body: '',
-    confirmLabel: t('delete'),
-    danger: true,
+    title: t('confirm_delete_level'),
+    body: el('div', { style: 'font-size:13px; color:var(--ink-soft);' },
+      `${lv.name || '—'} · ${count} ${t('sections_count').toLowerCase()}`,
+    ),
+    confirmLabel: t('delete'), danger: true,
     onConfirm: () => {
-      mutate(() => { State.rows = State.rows.filter(r => r.id !== id); });
+      mutate(() => {
+        State.levels = State.levels.filter(l => l.id !== levelId);
+        State.rows = State.rows.filter(r => r.levelId !== levelId);
+      });
       renderSchedule();
       updateConflictBadge();
     },
   });
 }
 
-function clearBlock(row, blockKey) {
+function addSection(levelId) {
+  mutate(() => { State.rows.push(newSection(levelId)); });
+  renderSchedule();
+  updateConflictBadge();
+}
+
+function confirmDeleteSection(sectionId) {
+  modal({
+    title: t('confirm_delete_section'),
+    body: '', confirmLabel: t('delete'), danger: true,
+    onConfirm: () => {
+      mutate(() => { State.rows = State.rows.filter(r => r.id !== sectionId); });
+      renderSchedule();
+      updateConflictBadge();
+    },
+  });
+}
+
+function addBlock(sectionId) {
   mutate(() => {
-    row[blockKey] = { days: '', time: '', instr: '', room: '' };
+    const sec = State.rows.find(r => r.id === sectionId);
+    if (sec) sec.blocks.push(newBlock());
+  });
+  renderSchedule();
+  updateConflictBadge();
+}
+
+function removeBlock(sectionId, blockId) {
+  mutate(() => {
+    const sec = State.rows.find(r => r.id === sectionId);
+    if (sec) sec.blocks = sec.blocks.filter(b => b.id !== blockId);
   });
   renderSchedule();
   updateConflictBadge();
 }
 
 // ====================================================================
-// RENDER: CONFLICTS
+// CONFLICTS PANEL
 // ====================================================================
 
 function renderConflicts() {
   const panel = document.getElementById('panel-conflicts');
   clear(panel);
   panel.appendChild(renderPanelHeader({
-    title: t('conflicts_title'),
-    sub: t('conflicts_sub'),
+    title: t('conflicts_title'), sub: t('conflicts_sub'),
   }));
 
-  // Rules
   panel.appendChild(el('h3', {
     style: 'font-family:Fraunces,serif; font-size:14px; font-weight:600; margin-bottom:10px; color:var(--ink-soft);',
   }, t('rules_heading')));
@@ -1632,7 +1512,6 @@ function renderConflicts() {
   });
   panel.appendChild(rulesGrid);
 
-  // Live issues
   const { issues } = detectConflicts();
   panel.appendChild(el('h3', {
     style: 'font-family:Fraunces,serif; font-size:14px; font-weight:600; margin:24px 0 10px; color:var(--ink-soft);',
@@ -1659,40 +1538,31 @@ function renderConflicts() {
 }
 
 // ====================================================================
-// RENDER: VERSIONS
+// VERSIONS PANEL
 // ====================================================================
 
 function renderVersions() {
   const panel = document.getElementById('panel-versions');
   clear(panel);
   panel.appendChild(renderPanelHeader({
-    title: t('versions_title'),
-    sub: t('versions_sub'),
+    title: t('versions_title'), sub: t('versions_sub'),
   }));
 
-  // Snapshot form
   const reviewer = el('input', { type: 'text', placeholder: t('snap_reviewer') });
   const notes = el('textarea', { placeholder: t('snap_notes') });
-  const form = el('div', { class: 'snapshot-form' },
+  panel.appendChild(el('div', { class: 'snapshot-form' },
     el('div', { class: 'form-row' },
-      el('div', { class: 'modal-field' },
-        el('label', {}, t('snap_reviewer')), reviewer,
-      ),
-      el('div', { class: 'modal-field' },
-        el('label', {}, t('snap_notes')), notes,
-      ),
+      el('div', { class: 'modal-field' }, el('label', {}, t('snap_reviewer')), reviewer),
+      el('div', { class: 'modal-field' }, el('label', {}, t('snap_notes')), notes),
     ),
     el('button', {
       class: 'btn btn-primary',
       onclick: () => {
-        const r = (reviewer.value || '').trim() || '—';
-        const n = (notes.value || '').trim();
-        createSnapshot(r, n);
+        createSnapshot((reviewer.value || '').trim() || '—', (notes.value || '').trim());
         reviewer.value = ''; notes.value = '';
       },
     }, t('snap_save')),
-  );
-  panel.appendChild(form);
+  ));
   panel.appendChild(el('div', { style: 'height:14px;' }));
 
   if (State.snapshots.length === 0) {
@@ -1703,9 +1573,7 @@ function renderVersions() {
   }
 
   const list = el('div', { class: 'snapshot-list' });
-  // Show newest first
-  const sorted = State.snapshots.slice().reverse();
-  sorted.forEach((s, i) => {
+  State.snapshots.slice().reverse().forEach((s, i) => {
     const isLatest = i === 0;
     list.appendChild(el('div', { class: 'snapshot' + (isLatest ? ' latest' : '') },
       el('span', { class: 'snapshot-version mono' }, s.v),
@@ -1715,10 +1583,7 @@ function renderVersions() {
         ),
         s.notes ? el('div', { class: 'snapshot-notes' }, s.notes) : null,
       ),
-      el('button', {
-        class: 'btn',
-        onclick: () => confirmRestore(s),
-      }, t('restore')),
+      el('button', { class: 'btn', onclick: () => confirmRestore(s) }, t('restore')),
     ));
   });
   panel.appendChild(list);
@@ -1729,6 +1594,7 @@ function createSnapshot(reviewer, notes) {
   const date = new Date().toISOString().slice(0, 10);
   State.snapshots.push({
     v, reviewer, date, notes,
+    levels: JSON.parse(JSON.stringify(State.levels)),
     rows: JSON.parse(JSON.stringify(State.rows)),
     instructors: JSON.parse(JSON.stringify(State.instructors)),
   });
@@ -1746,7 +1612,8 @@ function confirmRestore(snap) {
     confirmLabel: t('restore'),
     onConfirm: () => {
       mutate(() => {
-        State.rows = JSON.parse(JSON.stringify(snap.rows));
+        State.levels = JSON.parse(JSON.stringify(snap.levels || []));
+        State.rows = JSON.parse(JSON.stringify(snap.rows || []));
         State.instructors = JSON.parse(JSON.stringify(snap.instructors || []));
       });
       render();
@@ -1756,52 +1623,49 @@ function confirmRestore(snap) {
 }
 
 // ====================================================================
-// RENDER: INSTRUCTORS
+// INSTRUCTORS PANEL
 // ====================================================================
 
 function renderInstructors() {
   const panel = document.getElementById('panel-instructors');
   clear(panel);
   panel.appendChild(renderPanelHeader({
-    title: t('instructors_title'),
-    sub: t('instructors_sub'),
+    title: t('instructors_title'), sub: t('instructors_sub'),
   }));
 
-  // Add form
   const nameInp = el('input', { class: 'field-input', type: 'text', placeholder: t('instr_name') });
   const minInp = el('input', { class: 'field-input', type: 'number', min: '0', value: '12' });
-  const addBtn = el('button', { class: 'btn btn-primary', onclick: () => {
-    const name = (nameInp.value || '').trim();
-    if (!name) return;
-    if (State.instructors.some(i => i.name === name)) { toast('Already exists', 'warn'); return; }
-    mutate(() => {
-      State.instructors.push({ name, minLoad: parseInt(minInp.value, 10) || 12 });
-    });
-    nameInp.value = ''; minInp.value = '12';
-    renderInstructors();
-    renderSchedule();
-  }}, t('instr_add'));
   panel.appendChild(el('div', { class: 'add-form' },
     el('div', { class: 'field' }, el('label', { class: 'field-label' }, t('instr_name')), nameInp),
     el('div', { class: 'field', style: 'max-width:140px; flex:0 0 140px;' },
       el('label', { class: 'field-label' }, t('instr_min')), minInp),
-    addBtn,
+    el('button', {
+      class: 'btn btn-primary',
+      onclick: () => {
+        const name = (nameInp.value || '').trim();
+        if (!name) return;
+        if (State.instructors.some(i => i.name === name)) { toast('Already exists', 'warn'); return; }
+        mutate(() => {
+          State.instructors.push({ name, minLoad: parseInt(minInp.value, 10) || 12 });
+        });
+        nameInp.value = ''; minInp.value = '12';
+        renderInstructors();
+        renderSchedule();
+      },
+    }, t('instr_add')),
   ));
 
-  // Compute load per instructor
-  const loadMap = new Map(); // name -> credits
+  const loadMap = new Map();
   State.rows.forEach(r => {
     const credits = parseInt(r.credits, 10) || 0;
-    [r.b1.instr, r.b2.instr].forEach(n => {
-      if (!n) return;
-      loadMap.set(n, (loadMap.get(n) || 0) + credits);
+    r.blocks.forEach(b => {
+      if (!b.instr) return;
+      loadMap.set(b.instr, (loadMap.get(b.instr) || 0) + credits);
     });
   });
 
-  // Combine declared instructors with any used in rows
   const declared = State.instructors.slice();
-  const used = Array.from(loadMap.keys());
-  used.forEach(n => {
+  Array.from(loadMap.keys()).forEach(n => {
     if (!declared.some(d => d.name === n)) declared.push({ name: n, minLoad: 12 });
   });
 
@@ -1813,23 +1677,21 @@ function renderInstructors() {
   }
 
   const tbl = el('table', { class: 'data' });
-  const thead = el('thead', {}, el('tr', {},
+  tbl.appendChild(el('thead', {}, el('tr', {},
     el('th', {}, t('instr_name')),
     el('th', {}, t('instr_assigned')),
     el('th', {}, t('instr_min')),
     el('th', {}, t('instr_balance')),
     el('th', {}, t('instr_load')),
     el('th', {}, ''),
-  ));
-  tbl.appendChild(thead);
+  )));
   const tbody = el('tbody');
   declared.forEach(inst => {
     const assigned = loadMap.get(inst.name) || 0;
     const balance = assigned - inst.minLoad;
     const pct = inst.minLoad ? Math.min(150, Math.round((assigned / inst.minLoad) * 100)) : 0;
     const fill = balance < 0 ? 'load-fill-under' : balance > inst.minLoad * 0.5 ? 'load-fill-over' : 'load-fill-ok';
-
-    const tr = el('tr', {},
+    tbody.appendChild(el('tr', {},
       el('td', {}, inst.name),
       el('td', { class: 'mono' }, String(assigned)),
       el('td', { class: 'mono' }, String(inst.minLoad)),
@@ -1843,8 +1705,7 @@ function renderInstructors() {
         el('button', { class: 'btn btn-ghost btn-icon', title: t('delete'),
           onclick: () => removeInstructor(inst.name) }, '✕'),
       ),
-    );
-    tbody.appendChild(tr);
+    ));
   });
   tbl.appendChild(tbody);
   panel.appendChild(el('div', { class: 'table-wrap' }, tbl));
@@ -1854,8 +1715,7 @@ function removeInstructor(name) {
   modal({
     title: t('delete') + '?',
     body: el('div', {}, name),
-    confirmLabel: t('delete'),
-    danger: true,
+    confirmLabel: t('delete'), danger: true,
     onConfirm: () => {
       mutate(() => {
         State.instructors = State.instructors.filter(i => i.name !== name);
@@ -1867,25 +1727,29 @@ function removeInstructor(name) {
 }
 
 // ====================================================================
-// RENDER: COURSES
+// COURSES PANEL
 // ====================================================================
 
 function renderCourses() {
   const panel = document.getElementById('panel-courses');
   clear(panel);
   panel.appendChild(renderPanelHeader({
-    title: t('courses_title'),
-    sub: t('courses_sub'),
+    title: t('courses_title'), sub: t('courses_sub'),
   }));
 
-  // Aggregate by code
-  const map = new Map(); // code -> { code, name, level, type, credits, count }
+  const map = new Map();
   State.rows.forEach(r => {
-    const k = r.code || '(no code)';
+    const k = (r.code || '(no code)') + '|' + r.type;
     if (!map.has(k)) {
-      map.set(k, { code: r.code, name: r.name, level: r.level, type: r.type, credits: r.credits, count: 0 });
+      map.set(k, {
+        code: r.code, name: r.name, type: r.type, credits: r.credits,
+        levels: new Set(), sections: 0, blocks: 0,
+      });
     }
-    map.get(k).count++;
+    const c = map.get(k);
+    if (r.levelId) c.levels.add(r.levelId);
+    c.sections++;
+    c.blocks += r.blocks.length;
   });
 
   if (map.size === 0) {
@@ -1899,10 +1763,10 @@ function renderCourses() {
   tbl.appendChild(el('thead', {}, el('tr', {},
     el('th', {}, t('code')),
     el('th', {}, t('name')),
-    el('th', {}, t('level')),
     el('th', {}, t('type')),
     el('th', {}, t('credits')),
     el('th', {}, t('sections_count')),
+    el('th', {}, t('blocks_count')),
   )));
   const tbody = el('tbody');
   Array.from(map.values()).forEach(c => {
@@ -1910,10 +1774,10 @@ function renderCourses() {
     tbody.appendChild(el('tr', {},
       el('td', { class: 'mono' }, c.code || '—'),
       el('td', {}, c.name || '—'),
-      el('td', {}, c.level || '—'),
       el('td', {}, typeLabel),
       el('td', { class: 'mono' }, String(c.credits || 0)),
-      el('td', { class: 'mono' }, String(c.count)),
+      el('td', { class: 'mono' }, String(c.sections)),
+      el('td', { class: 'mono' }, String(c.blocks)),
     ));
   });
   tbl.appendChild(tbody);
@@ -1925,17 +1789,32 @@ function renderCourses() {
 // ====================================================================
 
 const EXPORT_HEADERS = [
-  'code', 'name', 'level', 'type', 'credits',
-  'b1_days', 'b1_time', 'b1_instr', 'b1_room',
-  'b2_days', 'b2_time', 'b2_instr', 'b2_room',
+  'level', 'code', 'name', 'type', 'credits', 'days',
+  'block', 'time', 'instr', 'room',
 ];
 
-function rowsAsTable() {
-  return State.rows.map(r => ({
-    code: r.code, name: r.name, level: r.level, type: r.type, credits: r.credits,
-    b1_days: r.b1.days, b1_time: r.b1.time, b1_instr: r.b1.instr, b1_room: r.b1.room,
-    b2_days: r.b2.days, b2_time: r.b2.time, b2_instr: r.b2.instr, b2_room: r.b2.room,
-  }));
+function flattenForExport() {
+  const out = [];
+  State.rows.forEach(r => {
+    const lv = State.levels.find(l => l.id === r.levelId);
+    const lvName = lv ? lv.name : '';
+    r.blocks.forEach((b, i) => {
+      out.push({
+        level: lvName,
+        code: r.code, name: r.name, type: r.type, credits: r.credits, days: r.days,
+        block: i + 1,
+        time: b.time, instr: b.instr, room: b.room,
+      });
+    });
+    if (r.blocks.length === 0) {
+      out.push({
+        level: lvName,
+        code: r.code, name: r.name, type: r.type, credits: r.credits, days: r.days,
+        block: 0, time: '', instr: '', room: '',
+      });
+    }
+  });
+  return out;
 }
 
 function escapeCSV(v, sep) {
@@ -1948,11 +1827,9 @@ function escapeCSV(v, sep) {
 }
 
 function toCSV(sep) {
-  const rows = rowsAsTable();
+  const flat = flattenForExport();
   const lines = [EXPORT_HEADERS.map(h => escapeCSV(h, sep)).join(sep)];
-  rows.forEach(r => {
-    lines.push(EXPORT_HEADERS.map(h => escapeCSV(r[h], sep)).join(sep));
-  });
+  flat.forEach(r => lines.push(EXPORT_HEADERS.map(h => escapeCSV(r[h], sep)).join(sep)));
   return lines.join('\n');
 }
 
@@ -1965,20 +1842,82 @@ function download(filename, content, mime) {
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
 }
 
+// Wide CSV: matches the spreadsheet layout in the reference image.
+// One row per section, with block1_*, block2_*, block3_*... columns.
+const WIDE_BASE = ['level', 'code', 'name', 'type', 'credits', 'days'];
+function widePerBlockHeaders(n) {
+  const out = [];
+  for (let i = 1; i <= n; i++) {
+    out.push(`block${i}_time`, `block${i}_instr`, `block${i}_room`);
+  }
+  return out;
+}
+function maxBlocks() {
+  return State.rows.reduce((m, r) => Math.max(m, r.blocks.length), 0) || 2;
+}
+function toWideCSV(sep, fixedBlocks) {
+  const n = fixedBlocks || maxBlocks();
+  const headers = WIDE_BASE.concat(widePerBlockHeaders(n));
+  const lines = [headers.map(h => escapeCSV(h, sep)).join(sep)];
+  State.rows.forEach(r => {
+    const lv = State.levels.find(l => l.id === r.levelId);
+    const row = {
+      level: lv ? lv.name : '',
+      code: r.code, name: r.name, type: r.type,
+      credits: r.credits, days: r.days,
+    };
+    for (let i = 1; i <= n; i++) {
+      const b = r.blocks[i - 1] || { time: '', instr: '', room: '' };
+      row[`block${i}_time`]  = b.time;
+      row[`block${i}_instr`] = b.instr;
+      row[`block${i}_room`]  = b.room;
+    }
+    lines.push(headers.map(h => escapeCSV(row[h], sep)).join(sep));
+  });
+  return lines.join('\n');
+}
+
+// Empty template with 2 example blocks per section (matches the reference image).
+function templateCSV() {
+  const headers = WIDE_BASE.concat(widePerBlockHeaders(2));
+  const example = [
+    'Level 3', 'CECS-211', 'Programming Fundamentals', 'lecture', '3', 'M,W',
+    '0800-0920', 'Dr. Example', '', '0930-1050', '', '',
+  ];
+  const example2 = [
+    'Level 3', 'CECS-211', 'Programming Fundamentals', 'lab', '1', 'U',
+    '0900-1040', '', '', '', '', '',
+  ];
+  return [
+    headers.join(','),
+    example.map(v => escapeCSV(v, ',')).join(','),
+    example2.map(v => escapeCSV(v, ',')).join(','),
+  ].join('\n');
+}
+
 function exportAs(fmt) {
   const stamp = new Date().toISOString().slice(0, 10);
   if (fmt === 'csv') {
     download(`cy_schedule_${stamp}.csv`, toCSV(','), 'text/csv');
     toast(t('exported'), 'ok');
+  } else if (fmt === 'csv-wide') {
+    download(`cy_schedule_${stamp}_wide.csv`, toWideCSV(','), 'text/csv');
+    toast(t('exported'), 'ok');
+  } else if (fmt === 'template') {
+    download(`cy_schedule_template.csv`, templateCSV(), 'text/csv');
+    toast(t('exported') + ' · template', 'ok');
   } else if (fmt === 'tsv') {
     download(`cy_schedule_${stamp}.tsv`, toCSV('\t'), 'text/tab-separated-values');
     toast(t('exported'), 'ok');
   } else if (fmt === 'json') {
-    const payload = { rows: State.rows, instructors: State.instructors, exportedAt: new Date().toISOString() };
+    const payload = {
+      levels: State.levels, rows: State.rows, instructors: State.instructors,
+      exportedAt: new Date().toISOString(),
+    };
     download(`cy_schedule_${stamp}.json`, JSON.stringify(payload, null, 2), 'application/json');
     toast(t('exported'), 'ok');
   } else if (fmt === 'copy') {
-    const payload = { rows: State.rows, instructors: State.instructors };
+    const payload = { levels: State.levels, rows: State.rows, instructors: State.instructors };
     navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
       .then(() => toast(t('copied'), 'ok'))
       .catch(() => toast('Copy failed', 'bad'));
@@ -1986,7 +1925,6 @@ function exportAs(fmt) {
 }
 
 function parseCSV(text, sep) {
-  // Minimal CSV parser supporting quoted fields with embedded sep/newlines.
   const rows = [];
   let cur = [], field = '', inQ = false;
   for (let i = 0; i < text.length; i++) {
@@ -2012,31 +1950,41 @@ function importFile(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const text = String(e.target.result || '').replace(/^﻿/, '');
-    let imported = [];
-    let importedInstr = null;
     try {
+      let levels, rows, instructors;
       if (file.name.endsWith('.json')) {
         const data = JSON.parse(text);
-        const arr = Array.isArray(data) ? data : data.rows;
-        imported = (arr || []).map(normalizeImportedRow);
-        if (data.instructors) importedInstr = data.instructors;
+        if (data.levels && data.rows) {
+          // v3 native
+          levels = data.levels;
+          rows = data.rows;
+          instructors = data.instructors || [];
+        } else if (Array.isArray(data) || data.rows) {
+          // legacy v2 b1/b2 — migrate
+          const m = migrateV2(Array.isArray(data) ? { rows: data } : data);
+          levels = m.levels; rows = m.rows; instructors = m.instructors;
+        } else {
+          throw new Error('Unrecognized JSON shape');
+        }
       } else {
         const sep = file.name.endsWith('.tsv') ? '\t' : ',';
-        const rows = parseCSV(text, sep);
-        if (!rows.length) throw new Error('Empty file');
-        const headers = rows[0].map(h => h.trim().toLowerCase());
-        imported = rows.slice(1).map(cols => {
+        const parsed = parseCSV(text, sep);
+        if (!parsed.length) throw new Error('Empty file');
+        const headers = parsed[0].map(h => h.trim().toLowerCase());
+        const items = parsed.slice(1).map(cols => {
           const obj = {};
           headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
-          return normalizeImportedRow(obj);
+          return obj;
         });
+        ({ levels, rows, instructors } = csvToState(items));
       }
       mutate(() => {
-        State.rows = imported;
-        if (importedInstr) State.instructors = importedInstr;
+        State.levels = levels;
+        State.rows = rows;
+        State.instructors = instructors;
       });
       render();
-      toast(`${t('imported')}: ${imported.length}`, 'ok');
+      toast(`${t('imported')}: ${rows.length}`, 'ok');
     } catch (err) {
       console.error(err);
       toast('Import failed: ' + err.message, 'bad');
@@ -2045,27 +1993,86 @@ function importFile(file) {
   reader.readAsText(file);
 }
 
-function normalizeImportedRow(obj) {
-  return {
-    id: newId(),
-    code: obj.code || '',
-    name: obj.name || '',
-    level: obj.level || '',
-    type: ['lecture','lab','online'].includes(obj.type) ? obj.type : 'lecture',
-    credits: parseInt(obj.credits, 10) || 0,
-    b1: {
-      days: obj.b1_days || '', time: obj.b1_time || '',
-      instr: obj.b1_instr || '', room: obj.b1_room || '',
-    },
-    b2: {
-      days: obj.b2_days || '', time: obj.b2_time || '',
-      instr: obj.b2_instr || '', room: obj.b2_room || '',
-    },
+// Convert parsed CSV rows back to state. Detects wide vs long format
+// by inspecting the headers of the first item.
+function csvToState(items) {
+  const levels = [];
+  const levelByName = new Map();
+  const ensureLevel = (name) => {
+    const key = name || '—';
+    if (levelByName.has(key)) return levelByName.get(key);
+    const lv = newLevel(key);
+    levelByName.set(key, lv);
+    levels.push(lv);
+    return lv;
   };
+
+  // Detect wide format: any block1_time / block_1_time style header.
+  const sample = items[0] || {};
+  const isWide = Object.keys(sample).some(k => /^block\s*_?\s*\d+_(time|instr|room)$/.test(k));
+
+  if (isWide) {
+    const rows = items.map(it => {
+      const lv = ensureLevel(it.level || '');
+      const blocks = [];
+      // Find block indices present
+      const indices = new Set();
+      Object.keys(it).forEach(k => {
+        const m = k.match(/^block\s*_?\s*(\d+)_(time|instr|room)$/);
+        if (m) indices.add(parseInt(m[1], 10));
+      });
+      Array.from(indices).sort((a, b) => a - b).forEach(i => {
+        const time  = it[`block${i}_time`]  || '';
+        const instr = it[`block${i}_instr`] || '';
+        const room  = it[`block${i}_room`]  || '';
+        if (time || instr || room) {
+          blocks.push({ id: newId('bk'), time, instr, room });
+        }
+      });
+      if (blocks.length === 0) blocks.push(newBlock());
+      return {
+        id: newId('sc'), levelId: lv.id,
+        code: it.code || '', name: it.name || '',
+        type: ['lecture','lab','online'].includes(it.type) ? it.type : 'lecture',
+        credits: parseInt(it.credits, 10) || 0,
+        days: it.days || '',
+        blocks,
+      };
+    });
+    return { levels, rows, instructors: [] };
+  }
+
+  // Long format: one row per block.
+  const sectionsByKey = new Map();
+  items.forEach(it => {
+    const lv = ensureLevel(it.level || '');
+    const key = lv.id + '|' + (it.code || '') + '|' + (it.type || '') + '|' + (it.name || '');
+    let sec = sectionsByKey.get(key);
+    if (!sec) {
+      sec = {
+        id: newId('sc'), levelId: lv.id,
+        code: it.code || '', name: it.name || '',
+        type: ['lecture','lab','online'].includes(it.type) ? it.type : 'lecture',
+        credits: parseInt(it.credits, 10) || 0,
+        days: it.days || '',
+        blocks: [],
+      };
+      sectionsByKey.set(key, sec);
+    }
+    if (it.time || it.instr || it.room) {
+      sec.blocks.push({
+        id: newId('bk'),
+        time: it.time || '', instr: it.instr || '', room: it.room || '',
+      });
+    }
+  });
+  const rows = Array.from(sectionsByKey.values());
+  rows.forEach(s => { if (s.blocks.length === 0) s.blocks.push(newBlock()); });
+  return { levels, rows, instructors: [] };
 }
 
 // ====================================================================
-// TABS
+// TABS / LANG
 // ====================================================================
 
 function setTab(name) {
@@ -2077,16 +2084,11 @@ function setTab(name) {
   document.querySelectorAll('.panel').forEach(p => {
     p.classList.toggle('active', p.id === 'panel-' + name);
   });
-  // Re-render the conflicts panel on activation so it reflects latest edits
-  if (name === 'conflicts') renderConflicts();
+  if (name === 'conflicts')   renderConflicts();
   if (name === 'instructors') renderInstructors();
-  if (name === 'courses') renderCourses();
-  if (name === 'versions') renderVersions();
+  if (name === 'courses')     renderCourses();
+  if (name === 'versions')    renderVersions();
 }
-
-// ====================================================================
-// LANGUAGE
-// ====================================================================
 
 function setLang(l) {
   State.lang = l;
@@ -2101,15 +2103,16 @@ function setLang(l) {
 // ====================================================================
 
 function init() {
-  // Load persisted state
   const saved = Storage.loadState();
   if (saved) {
+    State.levels = saved.levels || [];
     State.rows = (saved.rows || []).map(r => {
-      // Ensure id exists for legacy rows
-      if (!r.id) r.id = newId();
-      // Ensure block objects exist
-      r.b1 = r.b1 || { days: '', time: '', instr: '', room: '' };
-      r.b2 = r.b2 || { days: '', time: '', instr: '', room: '' };
+      if (!r.id) r.id = newId('sc');
+      r.blocks = (r.blocks || []).map(b => {
+        if (!b.id) b.id = newId('bk');
+        return b;
+      });
+      if (r.blocks.length === 0) r.blocks.push(newBlock());
       return r;
     });
     State.instructors = saved.instructors || [];
@@ -2119,37 +2122,35 @@ function init() {
   document.body.dir = State.lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.lang = State.lang;
 
-  // Tab clicks
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => setTab(tab.getAttribute('data-tab')));
   });
 
-  // Toolbar
   document.getElementById('btnLang').addEventListener('click',
     () => setLang(State.lang === 'en' ? 'ar' : 'en'));
   document.getElementById('btnPrint').addEventListener('click', () => window.print());
   document.getElementById('btnUndo').addEventListener('click', () => {
-    if (History.undo()) { render(); debouncedSave(); toast('Undo', ''); }
+    if (History.undo()) { render(); debouncedSave(); }
   });
   document.getElementById('btnRedo').addEventListener('click', () => {
-    if (History.redo()) { render(); debouncedSave(); toast('Redo', ''); }
+    if (History.redo()) { render(); debouncedSave(); }
   });
 
-  // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     const meta = e.metaKey || e.ctrlKey;
+    const tag = e.target.tagName;
+    const inField = tag === 'INPUT' || tag === 'TEXTAREA';
     if (meta && e.key === 'z' && !e.shiftKey) {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (inField) return;
       e.preventDefault();
       if (History.undo()) { render(); debouncedSave(); }
     } else if (meta && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (inField) return;
       e.preventDefault();
       if (History.redo()) { render(); debouncedSave(); }
     }
   });
 
-  // Export menu
   const menu = document.getElementById('exportMenu');
   document.getElementById('btnExport').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -2164,7 +2165,6 @@ function init() {
     });
   });
 
-  // Import
   document.getElementById('btnImport').addEventListener('click',
     () => document.getElementById('fileImport').click());
   document.getElementById('fileImport').addEventListener('change', (e) => {
