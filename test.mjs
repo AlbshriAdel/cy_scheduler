@@ -37,8 +37,8 @@ check('schedule panel visible',
   await page.isVisible('#panel-schedule.active'));
 check('toolbar present',
   await page.isVisible('.toolbar .brand-title'));
-check('5 tabs rendered',
-  (await page.$$('.tab')).length === 5);
+check('6 tabs rendered',
+  (await page.$$('.tab')).length === 6);
 check('empty state shown',
   await page.isVisible('text=No levels yet'));
 check('conflict badge hidden at 0',
@@ -226,6 +226,14 @@ check('level name survived reload',
   lvName === 'Level 3', lvName);
 
 console.log('\n══ 13. EXPORT / DOWNLOAD ══');
+// Take a snapshot first — Export is gated when dirty.
+await page.click('.tab:has-text("Versions")');
+await settle();
+await page.fill('.snapshot-form input', 'Pre-export');
+await page.click('.snapshot-form button:has-text("Save snapshot")');
+await settle();
+check('Export button enabled after snapshot',
+  (await page.evaluate(() => document.getElementById('btnExport').disabled)) === false);
 // Long CSV
 await page.click('#btnExport');
 const dlPromise = page.waitForEvent('download');
@@ -400,6 +408,111 @@ check('v2 b1+b2 → blocks[2]',
   migrated.rows.length === 1 && migrated.rows[0].blocks.length === 2);
 check('v2 instructors preserved',
   migrated.instructors.length === 1 && migrated.instructors[0].name === 'X');
+
+console.log('\n══ 21. CONFLICT TOOLTIP (reasons on pill) ══');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+// Build a quick R6 conflict
+await page.click('button:has-text("+ Add level")'); await settle();
+await page.fill('.level-name-input', 'L1');
+await page.click('.level-section button:has-text("+ Add section")'); await settle();
+let s1 = page.locator('.section-card').first();
+await s1.locator('.field:has-text("Code") input').fill('AAA-1');
+await s1.locator('.field:has-text("Days") select').selectOption('M');
+await s1.locator('.block').first().locator('.field:has-text("Time") select').selectOption('0800-0920');
+await s1.locator('.block').first().locator('.field:has-text("Instructor") select').selectOption({ label: '—' });
+// Add instr
+await page.click('.tab:has-text("Instructors")');
+await page.fill('.add-form input[type="text"]', 'Dr. T');
+await page.click('.add-form button:has-text("Add instructor")'); await settle();
+await page.click('.tab:has-text("Schedule")'); await settle();
+s1 = page.locator('.section-card').first();
+await s1.locator('.block').first().locator('.field:has-text("Instructor") select').selectOption('Dr. T');
+// Section 2 same instr same time
+await page.click('.level-section button:has-text("+ Add section")'); await settle();
+let s2 = page.locator('.section-card').nth(1);
+await s2.locator('.field:has-text("Code") input').fill('BBB-2');
+await s2.locator('.field:has-text("Days") select').selectOption('M');
+await s2.locator('.block').first().locator('.field:has-text("Time") select').selectOption('0800-0920');
+await s2.locator('.block').first().locator('.field:has-text("Instructor") select').selectOption('Dr. T');
+await settle();
+const conflictPillTitle = await page.locator('.section-card .pill.pill-bad').first().getAttribute('title');
+check('conflict pill has tooltip with R6 reason',
+  conflictPillTitle && conflictPillTitle.includes('R6') && conflictPillTitle.includes('Dr. T'),
+  conflictPillTitle);
+
+console.log('\n══ 22. DIRTY GATE blocks Export and Print ══');
+const banner = await page.isVisible('#dirtyBanner:not(.hidden)');
+check('dirty banner visible after edits',
+  banner === true);
+const expDisabled = await page.evaluate(() => document.getElementById('btnExport').disabled);
+const prDisabled = await page.evaluate(() => document.getElementById('btnPrint').disabled);
+check('Export disabled when dirty',  expDisabled);
+check('Print disabled when dirty',   prDisabled);
+
+console.log('\n══ 23. SNAPSHOT clears dirty + re-enables Export ══');
+await page.click('.tab:has-text("Versions")');
+await settle();
+await page.fill('.snapshot-form input', 'Adel');
+await page.click('.snapshot-form button:has-text("Save snapshot")');
+await settle();
+const expEnabled = await page.evaluate(() => document.getElementById('btnExport').disabled);
+const prEnabled = await page.evaluate(() => document.getElementById('btnPrint').disabled);
+check('Export re-enabled after snapshot',  expEnabled === false);
+check('Print re-enabled after snapshot',   prEnabled === false);
+const bannerHidden = await page.evaluate(() =>
+  document.getElementById('dirtyBanner').classList.contains('hidden'));
+check('dirty banner hidden after snapshot', bannerHidden);
+
+console.log('\n══ 24. EDIT after snapshot → dirty again ══');
+await page.click('.tab:has-text("Schedule")'); await settle();
+await page.locator('.section-card').first()
+  .locator('.field:has-text("Days") select').selectOption('T');
+await settle();
+const dirtyAgain = await page.evaluate(() =>
+  !document.getElementById('dirtyBanner').classList.contains('hidden'));
+check('dirty banner returns after edit',  dirtyAgain);
+
+console.log('\n══ 25. GRID PANEL renders sessions ══');
+// Snapshot first so export-gate is fine, then go to grid
+await page.click('.tab:has-text("Versions")'); await settle();
+await page.click('.snapshot-form button:has-text("Save snapshot")');
+await settle();
+await page.click('.tab:has-text("Grid")');
+await settle();
+check('grid panel active',
+  await page.isVisible('#panel-grid.active'));
+check('grid filter bar present',
+  (await page.$$('.grid-filters select')).length === 4);
+const gridRowsAll = await page.$$('.grid-row');
+check('grid rows rendered (1 header + slot rows)',
+  gridRowsAll.length >= 8);
+const busyCells = await page.$$('.grid-cell.busy, .grid-cell.conflict');
+check('grid shows busy cells for scheduled sessions',
+  busyCells.length >= 1);
+
+console.log('\n══ 26. GRID INSTRUCTOR FILTER + FREE labels ══');
+await page.selectOption('.grid-filters select#fInstr', 'Dr. T');
+await settle();
+const freeCells = await page.$$('.grid-cell.free');
+check('grid shows FREE cells when instructor filter active',
+  freeCells.length >= 1);
+const filteredBusy = await page.$$('.grid-cell.busy, .grid-cell.conflict');
+check('grid still shows busy/conflict cells under filter',
+  filteredBusy.length >= 1);
+
+console.log('\n══ 27. VIEW WEEK button switches to Grid pre-filtered ══');
+// Reset filter, go to schedule, click 📅 next to instructor
+await page.selectOption('.grid-filters select#fInstr', '');
+await page.click('.tab:has-text("Schedule")'); await settle();
+await page.locator('.section-card').first().locator('.view-week-btn').first().click();
+await settle();
+check('switched to grid panel via view-week',
+  await page.isVisible('#panel-grid.active'));
+const fInstrVal = await page.evaluate(() => document.getElementById('fInstr').value);
+check('grid pre-filtered for Dr. T via view-week',
+  fInstrVal === 'Dr. T', `got=${fInstrVal}`);
 
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);

@@ -460,6 +460,142 @@
   .row { display: flex; align-items: center; gap: 8px; }
   .grow { flex: 1; }
   .hidden { display: none !important; }
+
+  /* DIRTY BANNER */
+  .dirty-banner {
+    display: flex; align-items: center; gap: 10px;
+    margin: 12px 24px 0;
+    padding: 10px 16px;
+    background: var(--status-warn-bg);
+    color: var(--status-warn);
+    border: 1px solid var(--status-warn);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+  }
+  .dirty-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--status-warn);
+    flex: 0 0 8px;
+  }
+  .dirty-text { flex: 1; }
+  .dirty-banner .btn {
+    background: var(--card); border-color: var(--status-warn);
+    color: var(--status-warn);
+  }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+  /* GRID */
+  .grid-filters {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .grid-filter { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+  .grid-filter label {
+    font-size: 11px; color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: .08em; text-transform: uppercase;
+  }
+  .grid-filter select {
+    padding: 7px 10px;
+    background: var(--card-tint);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .grid-table {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+    overflow-x: auto;
+  }
+  .grid-row {
+    display: grid;
+    grid-template-columns: 110px repeat(5, minmax(140px, 1fr));
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .grid-row:last-child { border-bottom: none; }
+  .grid-cell {
+    padding: 8px 10px;
+    border-right: 1px solid var(--rule-soft);
+    min-height: 60px;
+    font-size: 12px;
+    position: relative;
+  }
+  .grid-cell:last-child { border-right: none; }
+  .grid-cell.head {
+    background: var(--paper-warm);
+    color: var(--ink-soft);
+    font-family: 'Geist Mono', monospace;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .grid-cell.time {
+    background: var(--card-tint);
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+  .grid-cell.time-lab { color: var(--terra); }
+  .grid-cell.busy {
+    background: var(--status-info-bg);
+    color: var(--status-info);
+  }
+  .grid-cell.conflict {
+    background: var(--status-bad-bg);
+    color: var(--status-bad);
+  }
+  .grid-cell.free {
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+  .grid-session-code {
+    font-family: 'Geist Mono', monospace;
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+  .grid-session-sub {
+    font-size: 11px;
+    opacity: .85;
+    line-height: 1.3;
+  }
+  .grid-session + .grid-session {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed currentColor;
+  }
+  .grid-legend {
+    display: flex; gap: 14px; margin-top: 10px;
+    font-size: 11px; color: var(--ink-faint);
+    flex-wrap: wrap;
+  }
+  .legend-swatch {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 2px; margin-right: 4px; vertical-align: middle;
+  }
+
+  /* INSTRUCTOR WEEK BUTTON inside block */
+  .block .field {
+    position: relative;
+  }
+  .view-week-btn {
+    position: absolute; top: 0; right: 0;
+    font-size: 11px; padding: 2px 6px;
+    color: var(--accent);
+    background: transparent;
+    border-radius: 4px;
+  }
+  body[dir="rtl"] .view-week-btn { right: auto; left: 0; }
+  .view-week-btn:hover { background: var(--paper-warm); }
 </style>
 </head>
 <body>
@@ -498,6 +634,9 @@
   <button class="tab active" role="tab" data-tab="schedule" aria-selected="true">
     <span class="tab-dot"></span><span data-i18n="tab_schedule">Schedule</span>
   </button>
+  <button class="tab" role="tab" data-tab="grid" aria-selected="false">
+    <span class="tab-dot"></span><span data-i18n="tab_grid">Grid</span>
+  </button>
   <button class="tab" role="tab" data-tab="conflicts" aria-selected="false">
     <span class="tab-dot"></span><span data-i18n="tab_conflicts">Conflicts</span>
     <span class="tab-badge" id="conflictBadge" data-count="0">0</span>
@@ -513,8 +652,15 @@
   </button>
 </nav>
 
+<div id="dirtyBanner" class="dirty-banner hidden" role="status">
+  <span class="dirty-dot"></span>
+  <span class="dirty-text" data-i18n="dirty_banner">Unsaved changes — create a snapshot to enable Export &amp; Print.</span>
+  <button class="btn btn-sm" id="dirtyGoSnap" data-i18n="dirty_take">Create snapshot</button>
+</div>
+
 <main class="panel-wrap">
   <section class="panel active" id="panel-schedule" role="tabpanel"></section>
+  <section class="panel" id="panel-grid" role="tabpanel"></section>
   <section class="panel" id="panel-conflicts" role="tabpanel"></section>
   <section class="panel" id="panel-versions" role="tabpanel"></section>
   <section class="panel" id="panel-instructors" role="tabpanel"></section>
@@ -609,9 +755,25 @@ const I18N = {
     brand_title: 'CY Schedule',
     brand_sub: 'Cybersecurity Department · Scheduler',
     import: 'Import', export: 'Export ▾', print: 'Print',
-    tab_schedule: 'Schedule', tab_conflicts: 'Conflicts',
+    tab_schedule: 'Schedule', tab_grid: 'Grid', tab_conflicts: 'Conflicts',
     tab_versions: 'Versions', tab_instructors: 'Instructors',
     tab_courses: 'Courses',
+    grid_title: 'Weekly grid',
+    grid_sub: 'Day × time-slot view. Filter by instructor, level, room, or type.',
+    grid_filter_instr: 'Instructor',
+    grid_filter_level: 'Level',
+    grid_filter_room: 'Room',
+    grid_filter_type: 'Type',
+    grid_all: 'All',
+    grid_free: 'free',
+    grid_legend_busy: 'Busy',
+    grid_legend_free: 'Free',
+    grid_legend_conflict: 'Conflict',
+    view_week: 'View week',
+    dirty_banner: 'Unsaved changes — create a snapshot to enable Export & Print.',
+    dirty_take: 'Create snapshot',
+    blocked_export: 'Create a snapshot first to enable Export.',
+    blocked_print: 'Create a snapshot first to enable Print.',
     schedule_title: 'Schedule',
     schedule_sub: 'Levels group sections; each section can have one or more blocks (parallel sections).',
     add_level: '+ Add level',
@@ -671,9 +833,25 @@ const I18N = {
     brand_title: 'جدول الأمن السيبراني',
     brand_sub: 'قسم الأمن السيبراني · المجدول',
     import: 'استيراد', export: 'تصدير ▾', print: 'طباعة',
-    tab_schedule: 'الجدول', tab_conflicts: 'التعارضات',
+    tab_schedule: 'الجدول', tab_grid: 'الشبكة', tab_conflicts: 'التعارضات',
     tab_versions: 'الإصدارات', tab_instructors: 'المدرسون',
     tab_courses: 'المقررات',
+    grid_title: 'الشبكة الأسبوعية',
+    grid_sub: 'عرض الأيام × الفترات. صفِّ حسب المدرس أو المستوى أو القاعة أو النوع.',
+    grid_filter_instr: 'المدرس',
+    grid_filter_level: 'المستوى',
+    grid_filter_room: 'القاعة',
+    grid_filter_type: 'النوع',
+    grid_all: 'الكل',
+    grid_free: 'متاح',
+    grid_legend_busy: 'مشغول',
+    grid_legend_free: 'متاح',
+    grid_legend_conflict: 'تعارض',
+    view_week: 'عرض الأسبوع',
+    dirty_banner: 'تغييرات غير محفوظة — أنشئ نسخة لتمكين التصدير والطباعة.',
+    dirty_take: 'إنشاء نسخة',
+    blocked_export: 'أنشئ نسخة أولاً لتفعيل التصدير.',
+    blocked_print: 'أنشئ نسخة أولاً لتفعيل الطباعة.',
     schedule_title: 'الجدول',
     schedule_sub: 'المستويات تحتوي على شعب، وكل شعبة تحتوي على بلوك أو أكثر (شعب متوازية).',
     add_level: '+ إضافة مستوى',
@@ -745,6 +923,7 @@ const State = {
   lang: 'en',
   history: [],
   future: [],
+  gridFilters: { instr: '', level: '', room: '', type: '' },
 };
 
 const newId = (p='id') => p + '_' + Math.random().toString(36).slice(2, 9);
@@ -898,10 +1077,39 @@ function updateHistoryButtons() {
   document.getElementById('btnRedo').disabled = State.future.length === 0;
 }
 
+// Dirty = state has changed since the latest snapshot. When dirty, Export
+// and Print are blocked until the user creates a snapshot ("a copy of the
+// current version").
+function isDirty() {
+  if (State.levels.length === 0 && State.rows.length === 0) return false;
+  if (State.snapshots.length === 0) return true;
+  const latest = State.snapshots[State.snapshots.length - 1];
+  const cur = JSON.stringify({ levels: State.levels, rows: State.rows });
+  const ref = JSON.stringify({ levels: latest.levels || [], rows: latest.rows || [] });
+  return cur !== ref;
+}
+
+function updateGate() {
+  const dirty = isDirty();
+  const banner = document.getElementById('dirtyBanner');
+  if (banner) banner.classList.toggle('hidden', !dirty);
+  const btnExp = document.getElementById('btnExport');
+  const btnPr = document.getElementById('btnPrint');
+  if (btnExp) {
+    btnExp.disabled = dirty;
+    btnExp.title = dirty ? t('blocked_export') : '';
+  }
+  if (btnPr) {
+    btnPr.disabled = dirty;
+    btnPr.title = dirty ? t('blocked_print') : '';
+  }
+}
+
 function mutate(fn) {
   History.snapshot();
   fn();
   debouncedSave();
+  updateGate();
 }
 
 let coalesceTimer = null;
@@ -909,6 +1117,7 @@ function mutateCoalesced(fn) {
   if (coalesceTimer === null) History.snapshot();
   fn();
   debouncedSave();
+  updateGate();
   clearTimeout(coalesceTimer);
   coalesceTimer = setTimeout(() => { coalesceTimer = null; }, 600);
 }
@@ -927,15 +1136,16 @@ function buildSessions() {
   State.rows.forEach(r => {
     if (!r.days) return;
     const days = expandDays(r.days);
-    r.blocks.forEach(b => {
+    r.blocks.forEach((b, idx) => {
       if (!b.time) return;
       const slot = findSlot(r.type, b.time);
       if (!slot) return;
       days.forEach(day => {
         out.push({
-          rowId: r.id, blockId: b.id, day,
-          start: slot.start, end: slot.end,
+          rowId: r.id, blockId: b.id, blockIdx: idx, day,
+          start: slot.start, end: slot.end, slotCode: b.time,
           levelId: r.levelId, type: r.type,
+          code: r.code, name: r.name, days: r.days,
           instr: b.instr, room: b.room,
         });
       });
@@ -944,43 +1154,56 @@ function buildSessions() {
   return out;
 }
 
+// Cache of the most recent conflict computation, populated by detectConflicts().
+// Render code reads from this so functions don't need to thread it through.
+let _lastConflicts = { issues: [], byBlock: new Set(), reasonsByBlock: new Map() };
+
 function detectConflicts() {
   const sessions = buildSessions();
   const issues = [];
   const byBlock = new Set(); // "rowId|blockId"
+  const reasonsByBlock = new Map(); // "rowId|blockId" -> [string,...]
+  const addReason = (key, reason) => {
+    if (!reasonsByBlock.has(key)) reasonsByBlock.set(key, []);
+    const list = reasonsByBlock.get(key);
+    if (!list.includes(reason)) list.push(reason);
+  };
+  const lvName = (id) => (State.levels.find(l => l.id === id) || {}).name || '—';
+  const sessionLabel = (s) => `${s.code || '?'} B${s.blockIdx + 1} (${s.slotCode})`;
 
   for (let i = 0; i < sessions.length; i++) {
     for (let j = i + 1; j < sessions.length; j++) {
       const a = sessions[i], b = sessions[j];
       if (a.day !== b.day) continue;
       if (!rangesOverlap(a, b)) continue;
-
-      const lvName = (id) => (State.levels.find(l => l.id === id) || {}).name || '—';
+      const aKey = a.rowId + '|' + a.blockId;
+      const bKey = b.rowId + '|' + b.blockId;
 
       if (a.levelId && a.levelId === b.levelId && a.type !== 'online' && b.type !== 'online') {
-        issues.push({ rule: 'R5', day: a.day,
-          reason: `Level "${lvName(a.levelId)}" has overlapping sessions.`,
-          a: a.rowId + '|' + a.blockId, b: b.rowId + '|' + b.blockId });
-        byBlock.add(a.rowId + '|' + a.blockId);
-        byBlock.add(b.rowId + '|' + b.blockId);
+        const reason = `Level "${lvName(a.levelId)}" has overlapping sessions.`;
+        issues.push({ rule: 'R5', day: a.day, reason, a: aKey, b: bKey });
+        byBlock.add(aKey); byBlock.add(bKey);
+        addReason(aKey, `R5 ${a.day}: clashes with ${sessionLabel(b)} in same level`);
+        addReason(bKey, `R5 ${a.day}: clashes with ${sessionLabel(a)} in same level`);
       }
       if (a.instr && a.instr === b.instr) {
-        issues.push({ rule: 'R6', day: a.day,
-          reason: `Instructor "${a.instr}" is double-booked.`,
-          a: a.rowId + '|' + a.blockId, b: b.rowId + '|' + b.blockId });
-        byBlock.add(a.rowId + '|' + a.blockId);
-        byBlock.add(b.rowId + '|' + b.blockId);
+        const reason = `Instructor "${a.instr}" is double-booked.`;
+        issues.push({ rule: 'R6', day: a.day, reason, a: aKey, b: bKey });
+        byBlock.add(aKey); byBlock.add(bKey);
+        addReason(aKey, `R6 ${a.day}: ${a.instr} also teaches ${sessionLabel(b)}`);
+        addReason(bKey, `R6 ${a.day}: ${a.instr} also teaches ${sessionLabel(a)}`);
       }
       if (a.room && a.room === b.room && a.type !== 'online' && b.type !== 'online') {
-        issues.push({ rule: 'R7', day: a.day,
-          reason: `Room "${a.room}" is double-booked.`,
-          a: a.rowId + '|' + a.blockId, b: b.rowId + '|' + b.blockId });
-        byBlock.add(a.rowId + '|' + a.blockId);
-        byBlock.add(b.rowId + '|' + b.blockId);
+        const reason = `Room "${a.room}" is double-booked.`;
+        issues.push({ rule: 'R7', day: a.day, reason, a: aKey, b: bKey });
+        byBlock.add(aKey); byBlock.add(bKey);
+        addReason(aKey, `R7 ${a.day}: room ${a.room} also used by ${sessionLabel(b)}`);
+        addReason(bKey, `R7 ${a.day}: room ${a.room} also used by ${sessionLabel(a)}`);
       }
     }
   }
-  return { issues, byBlock };
+  _lastConflicts = { issues, byBlock, reasonsByBlock };
+  return _lastConflicts;
 }
 
 function blockStatus(row, block, conflictBlocks) {
@@ -1069,9 +1292,14 @@ function applyI18nLabels() {
   });
 }
 
-function statusPill(status) {
+function statusPill(status, reasons) {
   const meta = STATUS_LABELS[status];
-  return el('span', { class: 'pill ' + meta.cls }, t(meta.key));
+  const attrs = { class: 'pill ' + meta.cls };
+  if (reasons && reasons.length) {
+    attrs.title = reasons.join('\n');
+    attrs['aria-label'] = `${t(meta.key)}: ${reasons.join('; ')}`;
+  }
+  return el('span', attrs, t(meta.key));
 }
 
 // ====================================================================
@@ -1080,12 +1308,14 @@ function statusPill(status) {
 
 function render() {
   renderSchedule();
+  renderGrid();
   renderConflicts();
   renderVersions();
   renderInstructors();
   renderCourses();
   applyI18nLabels();
   updateHistoryButtons();
+  updateGate();
 }
 
 function renderPanelHeader({ title, sub, actions }) {
@@ -1319,15 +1549,39 @@ function renderBlock(section, block, idx, conflictBlocks) {
 
   wrap.appendChild(el('div', { class: 'block-head' },
     el('span', { class: 'block-name' }, `${t('block_n')} ${idx + 1}`),
-    el('div', { class: 'row', style: 'gap:6px;' }, statusPill(status), actions),
+    el('div', { class: 'row', style: 'gap:6px;' },
+      statusPill(status, _lastConflicts.reasonsByBlock.get(section.id + '|' + block.id)),
+      actions),
   ));
 
   const grid = el('div', { class: 'row-grid' });
   grid.appendChild(makeField(t('time'),       blockTimeSelect(section, block)));
-  grid.appendChild(makeField(t('instructor'), blockInstrSelect(block)));
+  grid.appendChild(makeInstrField(block));
   grid.appendChild(makeField(t('room'),       blockRoomInput(block)));
   wrap.appendChild(grid);
 
+  return wrap;
+}
+
+// Instructor field with an inline "View week" link that opens the Grid
+// pre-filtered for the chosen instructor.
+function makeInstrField(block) {
+  const sel = blockInstrSelect(block);
+  const wrap = el('div', { class: 'field' },
+    el('label', { class: 'field-label' }, t('instructor')),
+    sel,
+  );
+  const link = el('button', {
+    class: 'view-week-btn',
+    type: 'button',
+    title: t('view_week'),
+    onclick: () => {
+      const name = sel.value || '';
+      State.gridFilters.instr = name;
+      setTab('grid');
+    },
+  }, '📅');
+  wrap.appendChild(link);
   return wrap;
 }
 
@@ -1399,7 +1653,8 @@ function refreshAfterEdit() {
       if (!blkEl) return;
       const pill = blkEl.querySelector('.pill');
       if (pill) {
-        const np = statusPill(blockStatus(sec, b, byBlock));
+        const np = statusPill(blockStatus(sec, b, byBlock),
+          _lastConflicts.reasonsByBlock.get(sec.id + '|' + b.id));
         pill.replaceWith(np);
       }
     });
@@ -1491,6 +1746,157 @@ function removeBlock(sectionId, blockId) {
   });
   renderSchedule();
   updateConflictBadge();
+}
+
+// ====================================================================
+// GRID PANEL (weekly visualization with filters)
+// ====================================================================
+
+const GRID_DAYS = ['U', 'M', 'T', 'W', 'R'];
+const DAY_LABEL = { U: 'Sun', M: 'Mon', T: 'Tue', W: 'Wed', R: 'Thu' };
+
+// Combined slot list, sorted by start time (lecture + lab interleaved).
+function allSlotsSorted() {
+  const merged = [
+    ...LECTURE_SLOTS.map(s => ({ ...s, kind: 'lecture' })),
+    ...LAB_SLOTS.map(s => ({ ...s, kind: 'lab' })),
+  ];
+  merged.sort((a, b) => a.start - b.start || a.end - b.end);
+  return merged;
+}
+
+function uniqueRooms() {
+  const set = new Set();
+  State.rows.forEach(r => r.blocks.forEach(b => { if (b.room) set.add(b.room); }));
+  return Array.from(set).sort();
+}
+
+function renderGrid() {
+  const panel = document.getElementById('panel-grid');
+  clear(panel);
+  panel.appendChild(renderPanelHeader({
+    title: t('grid_title'), sub: t('grid_sub'),
+  }));
+
+  // Filter bar
+  const filters = State.gridFilters;
+  const instrs = instructorOptions().sort();
+  const levels = State.levels.map(l => l.name).filter(Boolean);
+  const rooms = uniqueRooms();
+  const types = TYPES.map(x => x.code);
+
+  const buildSelect = (id, options, label, selected) => {
+    const sel = el('select', { id });
+    sel.appendChild(el('option', { value: '' }, t('grid_all')));
+    options.forEach(o => {
+      const opt = el('option', { value: o },
+        (label === 'type' ? (TYPES.find(tx => tx.code === o) || {})[State.lang === 'ar' ? 'ar' : 'en'] || o : o));
+      if (o === selected) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    return sel;
+  };
+
+  const fInstr = buildSelect('fInstr', instrs, 'instr', filters.instr);
+  const fLevel = buildSelect('fLevel', levels, 'level', filters.level);
+  const fRoom = buildSelect('fRoom', rooms, 'room', filters.room);
+  const fType = buildSelect('fType', types, 'type', filters.type);
+
+  [fInstr, fLevel, fRoom, fType].forEach((sel, i) => {
+    sel.addEventListener('change', () => {
+      const k = ['instr','level','room','type'][i];
+      State.gridFilters[k] = sel.value;
+      renderGrid();
+    });
+  });
+
+  panel.appendChild(el('div', { class: 'grid-filters' },
+    el('div', { class: 'grid-filter' }, el('label', {}, t('grid_filter_instr')), fInstr),
+    el('div', { class: 'grid-filter' }, el('label', {}, t('grid_filter_level')), fLevel),
+    el('div', { class: 'grid-filter' }, el('label', {}, t('grid_filter_room')),  fRoom),
+    el('div', { class: 'grid-filter' }, el('label', {}, t('grid_filter_type')),  fType),
+  ));
+
+  // Build the grid
+  const sessions = buildSessions();
+  const { byBlock } = detectConflicts();
+  const slotsAll = allSlotsSorted();
+
+  const matches = (s) => {
+    if (filters.instr && s.instr !== filters.instr) return false;
+    if (filters.level) {
+      const lv = State.levels.find(l => l.id === s.levelId);
+      if (!lv || lv.name !== filters.level) return false;
+    }
+    if (filters.room && s.room !== filters.room) return false;
+    if (filters.type && s.type !== filters.type) return false;
+    return true;
+  };
+
+  // Index sessions by (day, slotCode)
+  const byCell = new Map();
+  sessions.filter(matches).forEach(s => {
+    const key = s.day + '|' + s.slotCode;
+    if (!byCell.has(key)) byCell.set(key, []);
+    byCell.get(key).push(s);
+  });
+
+  // Should empty cells say "FREE"? Only when an instructor (or room) filter is set.
+  const showFree = !!(filters.instr || filters.room);
+
+  const tableEl = el('div', { class: 'grid-table' });
+
+  // Header row
+  const head = el('div', { class: 'grid-row' });
+  head.appendChild(el('div', { class: 'grid-cell head' }, ''));
+  GRID_DAYS.forEach(d => head.appendChild(el('div', { class: 'grid-cell head' }, DAY_LABEL[d] + ' (' + d + ')')));
+  tableEl.appendChild(head);
+
+  // Slot rows
+  slotsAll.forEach(slot => {
+    const row = el('div', { class: 'grid-row' });
+    const timeCell = el('div', { class: 'grid-cell time' + (slot.kind === 'lab' ? ' time-lab' : '') });
+    timeCell.appendChild(el('div', { class: 'mono' }, slot.code));
+    timeCell.appendChild(el('div', { style: 'font-size:10px; opacity:.7;' }, slot.kind));
+    row.appendChild(timeCell);
+
+    GRID_DAYS.forEach(day => {
+      const cellSessions = byCell.get(day + '|' + slot.code) || [];
+      let cls = 'grid-cell';
+      if (cellSessions.length === 0) {
+        if (showFree) cls += ' free';
+        const cell = el('div', { class: cls }, showFree ? t('grid_free') : '');
+        row.appendChild(cell);
+        return;
+      }
+      const isConflict = cellSessions.some(s => byBlock.has(s.rowId + '|' + s.blockId));
+      cls += isConflict ? ' conflict' : ' busy';
+      const cell = el('div', { class: cls });
+      cellSessions.forEach(s => {
+        const lvName = (State.levels.find(l => l.id === s.levelId) || {}).name || '';
+        const sub = filters.instr
+          ? `${lvName} · ${s.room || '—'}`
+          : (s.instr || '—') + (s.room ? ' · ' + s.room : '');
+        const tip = `${s.code} · ${s.name || ''}\n${lvName}\n${s.instr || '(no instructor)'}\n${s.room || '(no room)'}\nDays: ${s.days}`;
+        const card = el('div', { class: 'grid-session', title: tip },
+          el('div', { class: 'grid-session-code' }, `${s.code || '?'} · B${s.blockIdx + 1}`),
+          el('div', { class: 'grid-session-sub' }, sub),
+        );
+        cell.appendChild(card);
+      });
+      row.appendChild(cell);
+    });
+    tableEl.appendChild(row);
+  });
+
+  panel.appendChild(tableEl);
+
+  // Legend
+  panel.appendChild(el('div', { class: 'grid-legend' },
+    el('span', {}, el('span', { class: 'legend-swatch', style: 'background:var(--status-info-bg); border:1px solid var(--status-info);' }), t('grid_legend_busy')),
+    el('span', {}, el('span', { class: 'legend-swatch', style: 'background:var(--status-bad-bg); border:1px solid var(--status-bad);' }), t('grid_legend_conflict')),
+    showFree ? el('span', {}, el('span', { class: 'legend-swatch', style: 'background:var(--card-tint); border:1px dashed var(--rule);' }), t('grid_legend_free')) : null,
+  ));
 }
 
 // ====================================================================
@@ -1605,6 +2011,7 @@ function createSnapshot(reviewer, notes) {
   });
   Storage.saveSnapshots();
   renderVersions();
+  updateGate();
   toast(t('snap_created'), 'ok');
 }
 
@@ -1901,6 +2308,10 @@ function templateCSV() {
 }
 
 function exportAs(fmt) {
+  if (isDirty()) {
+    toast(t('blocked_export'), 'warn');
+    return;
+  }
   const stamp = new Date().toISOString().slice(0, 10);
   if (fmt === 'csv') {
     download(`cy_schedule_${stamp}.csv`, toCSV(','), 'text/csv');
@@ -2089,6 +2500,7 @@ function setTab(name) {
   document.querySelectorAll('.panel').forEach(p => {
     p.classList.toggle('active', p.id === 'panel-' + name);
   });
+  if (name === 'grid')        renderGrid();
   if (name === 'conflicts')   renderConflicts();
   if (name === 'instructors') renderInstructors();
   if (name === 'courses')     renderCourses();
@@ -2133,7 +2545,11 @@ function init() {
 
   document.getElementById('btnLang').addEventListener('click',
     () => setLang(State.lang === 'en' ? 'ar' : 'en'));
-  document.getElementById('btnPrint').addEventListener('click', () => window.print());
+  document.getElementById('btnPrint').addEventListener('click', () => {
+    if (isDirty()) { toast(t('blocked_print'), 'warn'); return; }
+    window.print();
+  });
+  document.getElementById('dirtyGoSnap').addEventListener('click', () => setTab('versions'));
   document.getElementById('btnUndo').addEventListener('click', () => {
     if (History.undo()) { render(); debouncedSave(); }
   });
