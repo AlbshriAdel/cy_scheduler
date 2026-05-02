@@ -156,19 +156,29 @@ check('R6 issue listed',
 check('reason mentions instructor name',
   await page.locator('.issue-text:has-text("Dr. Alpha")').count() >= 1);
 
-console.log('\n══ 9. CONFLICT R5 (level overlap, different instructor) ══');
+console.log('\n══ 9. CONFLICT R5 (same course\'s own blocks overlapping) ══');
 await page.click('.tab:has-text("Schedule")');
 await settle();
-// Add a 2nd section in same level with overlapping time, different instructor
+// Add 2nd block to section 1 and set it to overlap with block 1 → R5
+const sec1Locator = page.locator('.section-card').nth(0);
+await sec1Locator.locator('.block').nth(1).locator('.field:has-text("Time") select')
+  .selectOption('0800-0920');
+await settle();
+await page.click('.tab:has-text("Conflicts")');
+await settle();
+check('R5 issue listed (same course self-overlap)',
+  await page.locator('.issue:has-text("R5")').count() >= 1);
+
+// Different course in same level overlapping should NOT be R5 anymore
+await page.click('.tab:has-text("Schedule")');
+await settle();
 await page.click('.level-section button:has-text("+ Add section")');
 await settle();
 const sec2 = page.locator('.section-card').nth(1);
 await sec2.locator('.field:has-text("Code") input').fill('CECS-212');
 await sec2.locator('.field:has-text("Name") input').fill('Data Structures');
 await sec2.locator('.field:has-text("Days") select').selectOption('M,W');
-const sec2b1 = sec2.locator('.block').nth(0);
-await sec2b1.locator('.field:has-text("Time") select').selectOption('0800-0920');
-// Add another instructor to test R5 only (no R6)
+await sec2.locator('.block').nth(0).locator('.field:has-text("Time") select').selectOption('1100-1220');
 await page.click('.tab:has-text("Instructors")');
 await page.fill('.add-form input[type="text"]', 'Dr. Beta');
 await page.click('.add-form button:has-text("Add instructor")');
@@ -178,18 +188,15 @@ await settle();
 await page.locator('.section-card').nth(1).locator('.block').nth(0)
   .locator('.field:has-text("Instructor") select').selectOption('Dr. Beta');
 await settle();
-await page.click('.tab:has-text("Conflicts")');
-await settle();
-check('R5 issue listed (level overlap)',
-  await page.locator('.issue:has-text("R5")').count() >= 1);
 
-console.log('\n══ 10. CONFLICT R7 (room double-book) ══');
+console.log('\n══ 10. CONFLICT R7 (room double-book across courses) ══');
 await page.click('.tab:has-text("Schedule")');
 await settle();
-// First fix R6 by making block 2 of section 1 use a non-overlapping time
+// Move sec1 block 2 off the overlap so R5/R6 are clear
 const sec1 = page.locator('.section-card').nth(0);
 await sec1.locator('.block').nth(1).locator('.field:has-text("Time") select').selectOption('0930-1050');
-// Set both block1 of sec1 and block1 of sec2 to use same room
+// Move sec2 block 1 to overlap with sec1 block 1, put both in same room
+await sec2.locator('.block').nth(0).locator('.field:has-text("Time") select').selectOption('0800-0920');
 await sec1.locator('.block').nth(0).locator('.field:has-text("Room") input').fill('R-100');
 await page.keyboard.press('Tab');
 await sec2.locator('.block').nth(0).locator('.field:has-text("Room") input').fill('R-100');
@@ -675,6 +682,131 @@ await settle();
 const stPersist = await readState();
 check('custom lab slot survived reload',
   stPersist.config.labSlots.some(s => s.code === '0630-0730'));
+
+console.log('\n══ 35. EDITABLE COURSES propagate to sections ══');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('button:has-text("+ Add level")'); await settle();
+await page.fill('.level-name-input', 'L-CE');
+await page.click('.level-section button:has-text("Bulk add")'); await settle();
+await page.fill('.modal textarea',
+  ['XYZ-1, Old Name, lecture, 3, M', 'XYZ-1, Old Name, lecture, 3, W'].join('\n'));
+await page.click('.modal-foot button.btn-primary'); await settle();
+// Go to Courses, edit name → all matching sections update
+await page.click('.tab:has-text("Courses")'); await settle();
+const nameInput = page.locator('#panel-courses table.data tbody tr').first()
+  .locator('input').nth(1);
+await nameInput.fill('Renamed Course');
+await nameInput.press('Tab');
+await settle();
+const ceSt = await readState();
+const allRenamed = ceSt.rows.every(r => r.code === 'XYZ-1' ? r.name === 'Renamed Course' : true);
+check('course rename propagated to all sections', allRenamed);
+const codeMatches = ceSt.rows.filter(r => r.code === 'XYZ-1').length;
+check('still 2 sections of XYZ-1', codeMatches === 2);
+
+console.log('\n══ 36. PER-LEVEL AUTO-ALLOCATE button exists ══');
+await page.click('.tab:has-text("Schedule")'); await settle();
+const lvlBtns = await page.locator('.level-section button:has-text("Auto-allocate")').count();
+check('per-level Auto-allocate button visible',
+  lvlBtns >= 1, `count=${lvlBtns}`);
+// Click it and verify state updated
+await page.click('.level-section button:has-text("Auto-allocate")');
+await settle();
+const afterPerLevel = await readState();
+const lvlRows = afterPerLevel.rows.filter(r => r.code === 'XYZ-1');
+const allHaveTime = lvlRows.every(r => r.blocks.every(b => b.time));
+check('per-level allocator filled blocks', allHaveTime);
+
+console.log('\n══ 37. SNAPSHOT records date+time ══');
+await page.click('.tab:has-text("Versions")'); await settle();
+await page.fill('.snapshot-form input', 'Tester');
+await page.click('.snapshot-form button:has-text("Save snapshot")'); await settle();
+const snapsRaw37 = await page.evaluate(() => localStorage.getItem('cy_sched_snapshots_v3'));
+const snaps37 = JSON.parse(snapsRaw37);
+const last = snaps37[snaps37.length - 1];
+check('snapshot has time field',
+  /^\d{2}:\d{2}:\d{2}$/.test(last.time || ''), last.time);
+check('snapshot has ISO ts field',
+  typeof last.ts === 'string' && last.ts.includes('T'), last.ts);
+check('versions panel shows storage path',
+  await page.locator('text=cy_sched_snapshots_v3').count() >= 1);
+
+console.log('\n══ 38. CONFLICT SUGGESTION applies a fix ══');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+// Build R6 conflict: same instr, two sections, same time
+await page.click('.tab:has-text("Instructors")');
+await page.fill('.add-form input[type="text"]', 'Dr. Sx');
+await page.click('.add-form button:has-text("Add instructor")'); await settle();
+await page.click('.tab:has-text("Schedule")'); await settle();
+await page.click('button:has-text("+ Add level")'); await settle();
+await page.fill('.level-name-input', 'L-Sx');
+await page.click('.level-section button:has-text("+ Add section")'); await settle();
+await page.click('.level-section button:has-text("+ Add section")'); await settle();
+const sx1 = page.locator('.section-card').nth(0);
+const sx2 = page.locator('.section-card').nth(1);
+await sx1.locator('.field:has-text("Code") input').fill('SX-A');
+await sx1.locator('.field:has-text("Days") select').selectOption('M');
+await sx1.locator('.block').first().locator('.field:has-text("Time") select').selectOption('0800-0920');
+await sx1.locator('.block').first().locator('.field:has-text("Instructor") select').selectOption('Dr. Sx');
+await sx2.locator('.field:has-text("Code") input').fill('SX-B');
+await sx2.locator('.field:has-text("Days") select').selectOption('M');
+await sx2.locator('.block').first().locator('.field:has-text("Time") select').selectOption('0800-0920');
+await sx2.locator('.block').first().locator('.field:has-text("Instructor") select').selectOption('Dr. Sx');
+await settle();
+await page.click('.tab:has-text("Conflicts")'); await settle();
+const beforeBadge = await page.textContent('#conflictBadge');
+check('conflict exists before suggestion',
+  parseInt(beforeBadge, 10) >= 1, `badge=${beforeBadge}`);
+const applyBtn = page.locator('.issue button.btn-sm').first();
+const sugCount = await applyBtn.count();
+check('Apply suggestion button rendered', sugCount >= 1);
+await applyBtn.click();
+await settle();
+const afterBadge = await page.textContent('#conflictBadge');
+check('conflict cleared after applying suggestion',
+  parseInt(afterBadge, 10) < parseInt(beforeBadge, 10),
+  `before=${beforeBadge} after=${afterBadge}`);
+
+console.log('\n══ 39. INSTRUCTOR CSV IMPORT ══');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('.tab:has-text("Instructors")'); await settle();
+import('fs').then(); // silence unused
+const fs2 = await import('fs');
+const tmpInstr = '/tmp/cy_test_instructors.csv';
+fs2.writeFileSync(tmpInstr, 'name,min_load\nDr. Imp1,10\nDr. Imp2,15\nDr. Imp3,9\n');
+await page.setInputFiles('#fileImportInstr', tmpInstr);
+await settle();
+const stI = await readState();
+check('instructors imported',
+  stI.instructors.length === 3, JSON.stringify(stI.instructors));
+const dr2 = stI.instructors.find(i => i.name === 'Dr. Imp2');
+check('imported min_load preserved',
+  dr2 && dr2.minLoad === 15, JSON.stringify(dr2));
+
+console.log('\n══ 40. XLSX EXPORT produces a valid zip ══');
+// Need a snapshot so export is allowed
+await page.click('.tab:has-text("Versions")'); await settle();
+await page.fill('.snapshot-form input', 'X');
+await page.click('.snapshot-form button:has-text("Save snapshot")'); await settle();
+await page.click('#btnExport');
+const dlx = page.waitForEvent('download');
+await page.click('.menu-item:has-text("Excel")');
+const xlsxDl = await dlx;
+const xlsxPath = await xlsxDl.path();
+const xlsxBytes = fs2.readFileSync(xlsxPath);
+check('xlsx file ≥ 1KB', xlsxBytes.length >= 500, `bytes=${xlsxBytes.length}`);
+// PK signature (ZIP)
+check('xlsx starts with PK signature',
+  xlsxBytes[0] === 0x50 && xlsxBytes[1] === 0x4B);
+check('xlsx default name is Course_Schedule_Template',
+  xlsxDl.suggestedFilename() === 'Course_Schedule_Template.xlsx',
+  xlsxDl.suggestedFilename());
 
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);

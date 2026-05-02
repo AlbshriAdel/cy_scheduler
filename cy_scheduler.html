@@ -198,14 +198,19 @@
   .empty-title { font-family: 'Fraunces', serif; font-size: 18px; color: var(--ink-soft); margin-bottom: 6px; }
   .empty-sub { font-size: 13px; margin-bottom: 18px; }
 
-  /* LEVEL SECTION */
+  /* LEVEL SECTION — distinct from sections via warmer fill + accent stripe */
   .level-section {
-    background: var(--card);
+    background: var(--paper-warmer);
     border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
     border-radius: var(--radius);
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: var(--shadow-sm);
+  }
+  body[dir="rtl"] .level-section {
+    border-left: 1px solid var(--rule);
+    border-right: 4px solid var(--accent);
   }
   .level-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -229,14 +234,15 @@
   }
   .level-actions { display: flex; gap: 6px; }
 
-  /* SECTION CARD */
+  /* SECTION CARD — bright white to stand against warm level fill */
   .section-card {
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--rule);
     border-radius: var(--radius-sm);
     padding: 14px;
     margin-bottom: 12px;
-    background: var(--card-tint);
+    background: var(--card);
     transition: border-color .15s;
+    box-shadow: var(--shadow-sm);
   }
   .section-card:last-child { margin-bottom: 0; }
   .section-card.has-conflict { border-color: var(--status-bad); background: #FEF6F2; }
@@ -287,11 +293,17 @@
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 10px;
   }
+  /* BLOCK — distinct tint so the L→S→B hierarchy is visually obvious */
   .block {
     border: 1px solid var(--rule-soft);
+    border-left: 3px solid var(--terra);
     border-radius: 6px;
     padding: 10px;
-    background: var(--card);
+    background: var(--card-tint);
+  }
+  body[dir="rtl"] .block {
+    border-left: 1px solid var(--rule-soft);
+    border-right: 3px solid var(--terra);
   }
   .block-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -474,18 +486,24 @@
     .blocks-list { grid-template-columns: 1fr 1fr; gap: 6px; }
     .block { padding: 6px; }
 
-    /* Grid panel print: compact, fits A4 landscape */
+    /* Grid panel print: compact, fits A4 landscape on one page.
+       Usable area ≈ 273 × 190 mm; with header + legend ≈ 175 mm for the
+       grid → 12 slot rows × ~13 mm each. */
+    #panel-grid.active .grid-table { font-size: 9px; }
     .grid-row {
-      grid-template-columns: 70px repeat(5, 1fr);
+      grid-template-columns: 60px repeat(5, 1fr);
       page-break-inside: avoid;
     }
-    .grid-cell { min-height: 36px; padding: 4px 6px; font-size: 10px; }
-    .grid-cell.head { font-size: 9px; padding: 3px 4px; }
-    .grid-cell.time { font-size: 9px; padding: 3px 4px; }
-    .grid-session-code { font-size: 10px; }
-    .grid-session-sub { font-size: 9px; }
+    .grid-cell { min-height: 0; padding: 2px 4px; font-size: 9px; line-height: 1.2; }
+    .grid-cell.head { font-size: 8px; padding: 2px; }
+    .grid-cell.time { font-size: 8px; padding: 2px; }
+    .grid-session-code { font-size: 9px; margin-bottom: 1px; }
+    .grid-session-sub { font-size: 8px; }
+    .grid-session + .grid-session { margin-top: 2px; padding-top: 2px; }
     .grid-cell.busy { background: #EEF2F8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .grid-cell.conflict { background: #F4D6CD !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* Don't paginate the grid in the middle of the table */
+    .grid-table { page-break-inside: avoid; break-inside: avoid; }
   }
 
   .stack { display: flex; flex-direction: column; gap: 12px; }
@@ -646,9 +664,11 @@
     <span style="width:1px; height:20px; background:var(--rule);"></span>
     <button class="btn" id="btnImport" data-i18n="import">Import</button>
     <input type="file" id="fileImport" accept=".csv,.tsv,.json" hidden />
+    <input type="file" id="fileImportInstr" accept=".csv,.tsv" hidden />
     <div class="menu-wrap">
       <button class="btn" id="btnExport" data-i18n="export">Export ▾</button>
       <div class="menu" id="exportMenu" role="menu">
+        <button class="menu-item" data-export="xlsx">Excel (.xlsx) · full timetable</button>
         <button class="menu-item" data-export="csv">CSV (.csv) · long</button>
         <button class="menu-item" data-export="csv-wide">CSV (.csv) · wide</button>
         <button class="menu-item" data-export="tsv">TSV (.tsv)</button>
@@ -779,10 +799,10 @@ const TYPES = [
 const RULES = [
   { id: 'R1',  en: 'Each section must declare a level, type, and credits.',
                 ar: 'كل شعبة يجب أن تحدد المستوى والنوع والساعات.' },
-  { id: 'R5',  en: 'No two blocks in the same level can run in the same day & time.',
-                ar: 'لا يمكن لشعبتين من نفس المستوى أن تتزامنا في نفس اليوم والوقت.' },
-  { id: 'R6',  en: 'No instructor can teach two blocks at the same day & time.',
-                ar: 'لا يمكن للمدرس أن يدرّس شعبتين في نفس اليوم والوقت.' },
+  { id: 'R5',  en: 'A course cannot have two of its own blocks running at the same time.',
+                ar: 'لا يمكن للمقرر الواحد أن يكون له بلوكين في نفس الوقت.' },
+  { id: 'R6',  en: 'No instructor can teach two non-online blocks at the same day & time.',
+                ar: 'لا يمكن للمدرس أن يدرّس بلوكين (نظري/عملي) في نفس الوقت.' },
   { id: 'R7',  en: 'No room can host two blocks at the same day & time.',
                 ar: 'لا يمكن لقاعة أن تستضيف شعبتين في نفس اليوم والوقت.' },
   { id: 'R8',  en: 'Lecture sections use lecture time slots; labs use lab time slots.',
@@ -877,11 +897,14 @@ const I18N = {
     snap_save: 'Save snapshot',
     no_snaps: 'No snapshots yet.',
     snap_latest: 'Latest',
+    snap_count: '{n} version(s) saved',
+    storage_label: 'Stored in',
     restore: 'Restore',
     confirm_restore: 'Restore this snapshot? Current schedule will be replaced.',
     instructors_title: 'Instructors',
     instructors_sub: 'Manage faculty and view assigned load.',
     instr_add: 'Add instructor',
+    import_instr: 'Import instructors',
     instr_name: 'Name', instr_min: 'Min load',
     instr_assigned: 'Assigned', instr_balance: 'Balance', instr_load: 'Load',
     no_instructors: 'No instructors yet.',
@@ -889,7 +912,8 @@ const I18N = {
     courses_sub: 'Catalog auto-derived from current sections.',
     no_courses: 'No courses yet.',
     sections_count: 'Sections', blocks_count: 'Blocks',
-    cancel: 'Cancel', save: 'Save',
+    cancel: 'Cancel', save: 'Save', apply: 'Apply',
+    suggestion_applied: 'Suggestion applied',
     snap_created: 'Snapshot created',
     snap_restored: 'Snapshot restored',
     imported: 'Imported',
@@ -975,11 +999,14 @@ const I18N = {
     snap_save: 'حفظ النسخة',
     no_snaps: 'لا توجد نسخ.',
     snap_latest: 'الأحدث',
+    snap_count: 'عدد النسخ: {n}',
+    storage_label: 'مخزَّن في',
     restore: 'استرجاع',
     confirm_restore: 'استرجاع هذه النسخة؟ سيتم استبدال الجدول الحالي.',
     instructors_title: 'المدرسون',
     instructors_sub: 'إدارة هيئة التدريس وعرض العبء.',
     instr_add: 'إضافة مدرس',
+    import_instr: 'استيراد المدرسين',
     instr_name: 'الاسم', instr_min: 'الحد الأدنى',
     instr_assigned: 'المسند', instr_balance: 'الفرق', instr_load: 'العبء',
     no_instructors: 'لا يوجد مدرسون.',
@@ -987,7 +1014,8 @@ const I18N = {
     courses_sub: 'كتالوج مستخرج من الشعب الحالية.',
     no_courses: 'لا توجد مقررات.',
     sections_count: 'الشعب', blocks_count: 'البلوكات',
-    cancel: 'إلغاء', save: 'حفظ',
+    cancel: 'إلغاء', save: 'حفظ', apply: 'تطبيق',
+    suggestion_applied: 'تم تطبيق الاقتراح',
     snap_created: 'تم إنشاء النسخة',
     snap_restored: 'تم الاسترجاع',
     imported: 'تم الاستيراد',
@@ -1272,14 +1300,18 @@ function detectConflicts() {
       const aKey = a.rowId + '|' + a.blockId;
       const bKey = b.rowId + '|' + b.blockId;
 
-      if (a.levelId && a.levelId === b.levelId && a.type !== 'online' && b.type !== 'online') {
-        const reason = `Level "${lvName(a.levelId)}" has overlapping sessions.`;
+      // R5: same course (same row → its own Block 1 vs Block 2) at overlapping time.
+      // Different courses overlapping in the same level is allowed (parallel sections).
+      if (a.rowId === b.rowId) {
+        const reason = `Course "${a.code || a.name}" has Block ${a.blockIdx + 1} and Block ${b.blockIdx + 1} at the same time.`;
         issues.push({ rule: 'R5', day: a.day, reason, a: aKey, b: bKey });
         byBlock.add(aKey); byBlock.add(bKey);
-        addReason(aKey, `R5 ${a.day}: clashes with ${sessionLabel(b)} in same level`);
-        addReason(bKey, `R5 ${a.day}: clashes with ${sessionLabel(a)} in same level`);
+        addReason(aKey, `R5 ${a.day}: same course, also has B${b.blockIdx + 1} at this time`);
+        addReason(bKey, `R5 ${a.day}: same course, also has B${a.blockIdx + 1} at this time`);
       }
-      if (a.instr && a.instr === b.instr) {
+      // R6: instructor double-book — only flagged when both blocks are non-online
+      // (lecture or lab). Instructor on an online block doesn't lock physical time.
+      if (a.instr && a.instr === b.instr && a.type !== 'online' && b.type !== 'online') {
         const reason = `Instructor "${a.instr}" is double-booked.`;
         issues.push({ rule: 'R6', day: a.day, reason, a: aKey, b: bKey });
         byBlock.add(aKey); byBlock.add(bKey);
@@ -1497,6 +1529,11 @@ function renderLevel(level, conflictBlocks) {
         class: 'btn btn-sm',
         onclick: () => openBulkAdd(level.id),
       }, t('bulk_add')),
+      el('button', {
+        class: 'btn btn-sm',
+        title: t('auto_allocate'),
+        onclick: () => runAutoAllocateLevel(level.id),
+      }, t('auto_allocate')),
       el('button', {
         class: 'btn btn-sm btn-ghost',
         title: t('delete'),
@@ -1853,25 +1890,63 @@ function removeBlock(sectionId, blockId) {
 // AUTO-ALLOCATE — greedy fill of empty block times
 // ====================================================================
 
-function runAutoAllocate() {
+function runAutoAllocate() { _autoAllocate(null); }
+function runAutoAllocateLevel(levelId) { _autoAllocate(levelId); }
+
+// Score a candidate slot against the given (row, block, day):
+//   gap penalty for level — minimise gap between consecutive sessions in a
+//   level on the same day; instructor — modest reward for spacing (so a
+//   single instructor isn't taught back-to-back-to-back).
+// Lower score = better. Returns Infinity if conflict.
+function scoreSlot(row, block, slot) {
+  block.time = slot.code;
+  const { byBlock } = detectConflicts();
+  const conflict = byBlock.has(row.id + '|' + block.id);
+  if (conflict) { block.time = ''; return Infinity; }
+
+  const days = expandDays(row.days);
+  const sessions = buildSessions();
+  let levelGap = 0;
+  let instrLoad = 0;
+  days.forEach(day => {
+    const lvSesh = sessions.filter(s => s.day === day && s.levelId === row.levelId)
+      .sort((a, b) => a.start - b.start);
+    for (let i = 1; i < lvSesh.length; i++) {
+      const gap = lvSesh[i].start - lvSesh[i - 1].end;
+      if (gap > 0) levelGap += gap;
+    }
+    if (block.instr) {
+      const ins = sessions.filter(s => s.day === day && s.instr === block.instr);
+      instrLoad += ins.length;
+    }
+  });
+  block.time = '';
+  // Heavy weight on level gap; small bias on instructor balance.
+  return levelGap * 1.0 + instrLoad * 5;
+}
+
+function _autoAllocate(levelIdOrNull) {
   let filled = 0, skipped = 0;
+  const targets = levelIdOrNull
+    ? State.rows.filter(r => r.levelId === levelIdOrNull)
+    : State.rows;
   mutate(() => {
-    State.rows.forEach(r => {
+    targets.forEach(r => {
       if (!r.days) { r.blocks.forEach(b => { if (!b.time) skipped++; }); return; }
       r.blocks.forEach(b => {
         if (b.time) return;
         const slots = slotsFor(r.type);
-        let placed = false;
+        let bestSlot = null, bestScore = Infinity;
         for (const slot of slots) {
-          b.time = slot.code;
-          const { byBlock } = detectConflicts();
-          if (!byBlock.has(r.id + '|' + b.id)) {
-            placed = true;
-            break;
-          }
-          b.time = '';
+          const sc = scoreSlot(r, b, slot);
+          if (sc < bestScore) { bestScore = sc; bestSlot = slot; }
         }
-        if (placed) filled++; else skipped++;
+        if (bestSlot && bestScore !== Infinity) {
+          b.time = bestSlot.code;
+          filled++;
+        } else {
+          skipped++;
+        }
       });
     });
   });
@@ -2125,14 +2200,52 @@ function renderConflicts() {
 
   const list = el('div', { class: 'issues-list' });
   issues.slice(0, 100).forEach(iss => {
+    const sugg = suggestFix(iss);
     list.appendChild(el('div', { class: 'issue' },
       el('span', { class: 'pill pill-bad' }, iss.rule),
       el('span', { class: 'issue-meta' }, `Day ${iss.day}`),
       el('span', { class: 'issue-text' }, iss.reason),
+      sugg ? el('button', {
+        class: 'btn btn-sm',
+        title: sugg.label,
+        onclick: () => sugg.apply(),
+      }, `${t('apply')}: ${sugg.label}`) : null,
     ));
   });
   panel.appendChild(list);
   setConflictBadge(issues.length);
+}
+
+// Compute a possible resolution for one conflict.
+// Returns { label, apply } or null when no automatic fix is found.
+function suggestFix(iss) {
+  // Pick block "b" (the second one) as the candidate to move; try each
+  // alternative slot to see which clears its conflicts.
+  const [bRowId, bBlockId] = iss.b.split('|');
+  const row = State.rows.find(r => r.id === bRowId);
+  if (!row) return null;
+  const blk = row.blocks.find(x => x.id === bBlockId);
+  if (!blk) return null;
+  const original = blk.time;
+  const slots = slotsFor(row.type);
+  for (const slot of slots) {
+    if (slot.code === original) continue;
+    blk.time = slot.code;
+    const { byBlock } = detectConflicts();
+    if (!byBlock.has(row.id + '|' + blk.id)) {
+      blk.time = original; // restore
+      return {
+        label: `${row.code || row.name} B${row.blocks.indexOf(blk) + 1} → ${slot.code}`,
+        apply: () => {
+          mutate(() => { blk.time = slot.code; });
+          render();
+          toast(t('suggestion_applied'), 'ok');
+        },
+      };
+    }
+    blk.time = original;
+  }
+  return null;
 }
 
 // ====================================================================
@@ -2163,6 +2276,13 @@ function renderVersions() {
   ));
   panel.appendChild(el('div', { style: 'height:14px;' }));
 
+  // Storage path indicator — tells the user exactly where versions live.
+  panel.appendChild(el('div', {
+    style: 'font-size:12px; color:var(--ink-faint); font-family:Geist Mono, monospace; margin: 8px 0 14px;',
+  },
+    `${t('storage_label')}: localStorage["${STORAGE_SNAPS}"] · ${t('snap_count').replace('{n}', State.snapshots.length)}`,
+  ));
+
   if (State.snapshots.length === 0) {
     panel.appendChild(el('div', { class: 'empty' },
       el('div', { class: 'empty-title' }, t('no_snaps')),
@@ -2173,25 +2293,36 @@ function renderVersions() {
   const list = el('div', { class: 'snapshot-list' });
   State.snapshots.slice().reverse().forEach((s, i) => {
     const isLatest = i === 0;
+    const stamp = s.time ? `${s.date} ${s.time}` : (s.ts || s.date);
     list.appendChild(el('div', { class: 'snapshot' + (isLatest ? ' latest' : '') },
       el('span', { class: 'snapshot-version mono' }, s.v),
       el('div', { class: 'snapshot-info' },
         el('div', { class: 'snapshot-meta' },
-          `${s.date} · ${s.reviewer}` + (isLatest ? ` · ${t('snap_latest')}` : ''),
+          `${stamp} · ${s.reviewer}` + (isLatest ? ` · ${t('snap_latest')}` : ''),
         ),
         s.notes ? el('div', { class: 'snapshot-notes' }, s.notes) : null,
       ),
+      el('button', { class: 'btn btn-sm', onclick: () => downloadSnapshot(s) }, '↓'),
       el('button', { class: 'btn', onclick: () => confirmRestore(s) }, t('restore')),
     ));
   });
   panel.appendChild(list);
 }
 
+function downloadSnapshot(s) {
+  const fname = `cy_schedule_${s.v}_${(s.date || '').replace(/-/g, '')}.json`;
+  download(fname, JSON.stringify(s, null, 2), 'application/json');
+  toast(t('exported'), 'ok');
+}
+
 function createSnapshot(reviewer, notes) {
   const v = 'v' + (State.snapshots.length + 1).toString().padStart(3, '0');
-  const date = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const time = now.toTimeString().slice(0, 8);
+  const ts = now.toISOString();
   State.snapshots.push({
-    v, reviewer, date, notes,
+    v, reviewer, date, time, ts, notes,
     levels: JSON.parse(JSON.stringify(State.levels)),
     rows: JSON.parse(JSON.stringify(State.rows)),
     instructors: JSON.parse(JSON.stringify(State.instructors)),
@@ -2229,7 +2360,14 @@ function renderInstructors() {
   const panel = document.getElementById('panel-instructors');
   clear(panel);
   panel.appendChild(renderPanelHeader({
-    title: t('instructors_title'), sub: t('instructors_sub'),
+    title: t('instructors_title'),
+    sub: t('instructors_sub'),
+    actions: [
+      el('button', {
+        class: 'btn',
+        onclick: () => document.getElementById('fileImportInstr').click(),
+      }, t('import_instr')),
+    ],
   }));
 
   const nameInp = el('input', { class: 'field-input', type: 'text', placeholder: t('instr_name') });
@@ -2579,13 +2717,64 @@ function renderCourses() {
     el('th', {}, t('blocks_count')),
   )));
   const tbody = el('tbody');
-  Array.from(map.values()).forEach(c => {
-    const typeLabel = (TYPES.find(x => x.code === c.type) || {})[State.lang === 'ar' ? 'ar' : 'en'] || c.type;
+  Array.from(map.entries()).forEach(([key, c]) => {
+    const [origCode, origType] = key.split('|');
+
+    // Editable code: rename ALL sections that share (code+type) → keeps the
+    // course catalog the source of truth.
+    const codeInp = el('input', { class: 'field-input mono', type: 'text', value: c.code || '' });
+    codeInp.addEventListener('change', (e) => {
+      const v = e.target.value.trim();
+      if (v === c.code) return;
+      mutate(() => {
+        State.rows.forEach(r => { if (r.code === origCode && r.type === origType) r.code = v; });
+      });
+      render();
+    });
+
+    const nameInp = el('input', { class: 'field-input', type: 'text', value: c.name || '' });
+    nameInp.addEventListener('change', (e) => {
+      const v = e.target.value.trim();
+      if (v === c.name) return;
+      mutate(() => {
+        State.rows.forEach(r => { if (r.code === origCode && r.type === origType) r.name = v; });
+      });
+      render();
+    });
+
+    const typeSel = el('select', { class: 'field-select' });
+    TYPES.forEach(typ => {
+      const opt = el('option', { value: typ.code }, State.lang === 'ar' ? typ.ar : typ.en);
+      if (c.type === typ.code) opt.selected = true;
+      typeSel.appendChild(opt);
+    });
+    typeSel.addEventListener('change', (e) => {
+      const v = e.target.value;
+      mutate(() => {
+        State.rows.forEach(r => {
+          if (r.code === origCode && r.type === origType) {
+            r.type = v;
+            r.blocks.forEach(b => { if (!findSlot(v, b.time)) b.time = ''; });
+          }
+        });
+      });
+      render();
+    });
+
+    const creditsInp = el('input', { class: 'field-input mono', type: 'number', min: '0', value: String(c.credits || 0) });
+    creditsInp.addEventListener('change', (e) => {
+      const v = parseInt(e.target.value, 10) || 0;
+      mutate(() => {
+        State.rows.forEach(r => { if (r.code === origCode && r.type === origType) r.credits = v; });
+      });
+      renderCourses();
+    });
+
     tbody.appendChild(el('tr', {},
-      el('td', { class: 'mono' }, c.code || '—'),
-      el('td', {}, c.name || '—'),
-      el('td', {}, typeLabel),
-      el('td', { class: 'mono' }, String(c.credits || 0)),
+      el('td', { style: 'min-width:140px;' }, codeInp),
+      el('td', {}, nameInp),
+      el('td', { style: 'min-width:130px;' }, typeSel),
+      el('td', { style: 'width:90px;' }, creditsInp),
       el('td', { class: 'mono' }, String(c.sections)),
       el('td', { class: 'mono' }, String(c.blocks)),
     ));
@@ -2705,9 +2894,262 @@ function templateCSV() {
   ].join('\n');
 }
 
+// =============================================================
+// XLSX WRITER (single-file, no deps).
+// Produces an Office Open XML spreadsheet using STORE compression
+// (zip uncompressed) — Excel reads it identically.
+// =============================================================
+
+const _crc32_table = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = _crc32_table[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+const _enc = new TextEncoder();
+
+// files: [{name, data: Uint8Array}]
+function makeZip(files) {
+  const local = [];
+  const central = [];
+  let offset = 0;
+  files.forEach(f => {
+    const nameBytes = _enc.encode(f.name);
+    const crc = crc32(f.data);
+    const size = f.data.length;
+    // Local file header (30 + name)
+    const lh = new Uint8Array(30 + nameBytes.length);
+    const dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);   // signature
+    dv.setUint16(4, 20, true);           // version
+    dv.setUint16(6, 0, true);            // flags
+    dv.setUint16(8, 0, true);            // method (STORE)
+    dv.setUint16(10, 0, true);           // mod time
+    dv.setUint16(12, 0x21, true);        // mod date (1980-01-01)
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, size, true);
+    dv.setUint32(22, size, true);
+    dv.setUint16(26, nameBytes.length, true);
+    dv.setUint16(28, 0, true);
+    lh.set(nameBytes, 30);
+    local.push(lh, f.data);
+
+    const ch = new Uint8Array(46 + nameBytes.length);
+    const dv2 = new DataView(ch.buffer);
+    dv2.setUint32(0, 0x02014b50, true);
+    dv2.setUint16(4, 20, true);          // version made by
+    dv2.setUint16(6, 20, true);
+    dv2.setUint16(8, 0, true);
+    dv2.setUint16(10, 0, true);
+    dv2.setUint16(12, 0, true);
+    dv2.setUint16(14, 0x21, true);
+    dv2.setUint32(16, crc, true);
+    dv2.setUint32(20, size, true);
+    dv2.setUint32(24, size, true);
+    dv2.setUint16(28, nameBytes.length, true);
+    dv2.setUint32(42, offset, true);
+    ch.set(nameBytes, 46);
+    central.push(ch);
+
+    offset += lh.length + size;
+  });
+
+  let centralSize = 0;
+  central.forEach(c => centralSize += c.length);
+  const cdOffset = offset;
+
+  const eocd = new Uint8Array(22);
+  const dvE = new DataView(eocd.buffer);
+  dvE.setUint32(0, 0x06054b50, true);
+  dvE.setUint16(8, files.length, true);
+  dvE.setUint16(10, files.length, true);
+  dvE.setUint32(12, centralSize, true);
+  dvE.setUint32(16, cdOffset, true);
+
+  const total = offset + centralSize + 22;
+  const out = new Uint8Array(total);
+  let pos = 0;
+  local.forEach(l => { out.set(l, pos); pos += l.length; });
+  central.forEach(c => { out.set(c, pos); pos += c.length; });
+  out.set(eocd, pos);
+  return out;
+}
+
+function xmlEscape(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+function colLetter(n) {
+  let s = '';
+  while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+// rows: array of arrays of values (string|number)
+function sheetXml(rows) {
+  const lines = [];
+  lines.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>');
+  lines.push('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">');
+  lines.push('<sheetData>');
+  rows.forEach((cells, r) => {
+    lines.push(`<row r="${r + 1}">`);
+    cells.forEach((v, c) => {
+      const ref = colLetter(c + 1) + (r + 1);
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        lines.push(`<c r="${ref}"><v>${v}</v></c>`);
+      } else if (v == null || v === '') {
+        // skip empty
+      } else {
+        lines.push(`<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(v)}</t></is></c>`);
+      }
+    });
+    lines.push('</row>');
+  });
+  lines.push('</sheetData>');
+  lines.push('</worksheet>');
+  return lines.join('');
+}
+
+function buildWorkbook(sheets) {
+  // sheets: [{name, rows}]
+  const types = [
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
+    '<Default Extension="xml" ContentType="application/xml"/>',
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>',
+  ];
+  sheets.forEach((_, i) => {
+    types.push(`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`);
+  });
+  types.push('</Types>');
+
+  const rootRels = [
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">',
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>',
+    '</Relationships>',
+  ];
+
+  const wbRels = [
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">',
+  ];
+  sheets.forEach((_, i) => {
+    wbRels.push(`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`);
+  });
+  wbRels.push('</Relationships>');
+
+  const wb = [
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">',
+    '<sheets>',
+  ];
+  sheets.forEach((s, i) => {
+    wb.push(`<sheet name="${xmlEscape(s.name).slice(0, 31)}" sheetId="${i+1}" r:id="rId${i+1}"/>`);
+  });
+  wb.push('</sheets></workbook>');
+
+  const files = [
+    { name: '[Content_Types].xml', data: _enc.encode(types.join('')) },
+    { name: '_rels/.rels', data: _enc.encode(rootRels.join('')) },
+    { name: 'xl/workbook.xml', data: _enc.encode(wb.join('')) },
+    { name: 'xl/_rels/workbook.xml.rels', data: _enc.encode(wbRels.join('')) },
+  ];
+  sheets.forEach((s, i) => {
+    files.push({
+      name: `xl/worksheets/sheet${i+1}.xml`,
+      data: _enc.encode(sheetXml(s.rows)),
+    });
+  });
+
+  return makeZip(files);
+}
+
+// Build the full department timetable as one workbook:
+//   - Summary sheet (one row per block, all levels)
+//   - One sheet per level (matches the printable schedule)
+//   - Grid sheet (day × time)
+function exportXlsx() {
+  const summary = [['Level','Code','Name','Type','Credits','Days','Block','Time','Instructor','Room']];
+  State.rows.forEach(r => {
+    const lv = State.levels.find(l => l.id === r.levelId);
+    r.blocks.forEach((b, i) => {
+      summary.push([
+        lv ? lv.name : '', r.code || '', r.name || '', r.type, r.credits || 0,
+        r.days || '', `B${i+1}`, b.time || '', b.instr || '', b.room || '',
+      ]);
+    });
+  });
+
+  const sheets = [{ name: 'Summary', rows: summary }];
+
+  // Per-level sheets
+  State.levels.forEach(lv => {
+    const rows = State.rows.filter(r => r.levelId === lv.id);
+    if (rows.length === 0) return;
+    const maxBlocks = Math.max(2, ...rows.map(r => r.blocks.length));
+    const header = ['Code','Name','Type','Credits','Days'];
+    for (let i = 1; i <= maxBlocks; i++) {
+      header.push(`B${i} time`, `B${i} instr`, `B${i} room`);
+    }
+    const sheetRows = [header];
+    rows.forEach(r => {
+      const cells = [r.code || '', r.name || '', r.type, r.credits || 0, r.days || ''];
+      for (let i = 0; i < maxBlocks; i++) {
+        const b = r.blocks[i] || { time: '', instr: '', room: '' };
+        cells.push(b.time, b.instr, b.room);
+      }
+      sheetRows.push(cells);
+    });
+    sheets.push({ name: lv.name || `Level ${sheets.length}`, rows: sheetRows });
+  });
+
+  // Grid sheet
+  const slotsAll = allSlotsSorted();
+  const gridRows = [['', 'Sun (U)', 'Mon (M)', 'Tue (T)', 'Wed (W)', 'Thu (R)']];
+  const sessions = buildSessions();
+  slotsAll.forEach(slot => {
+    const row = [`${slot.code} ${slot.kind}`];
+    ['U','M','T','W','R'].forEach(day => {
+      const cell = sessions.filter(s => s.day === day && s.slotCode === slot.code)
+        .map(s => `${s.code} B${s.blockIdx+1}${s.instr ? ' / ' + s.instr : ''}${s.room ? ' / ' + s.room : ''}`)
+        .join(' | ');
+      row.push(cell);
+    });
+    gridRows.push(row);
+  });
+  sheets.push({ name: 'Grid', rows: gridRows });
+
+  const bytes = buildWorkbook(sheets);
+  const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Course_Schedule_Template.xlsx';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+}
+
 function exportAs(fmt) {
   if (isDirty()) {
     toast(t('blocked_export'), 'warn');
+    return;
+  }
+  if (fmt === 'xlsx') {
+    exportXlsx();
+    toast(t('exported') + ' · xlsx', 'ok');
     return;
   }
   const stamp = new Date().toISOString().slice(0, 10);
@@ -2758,6 +3200,40 @@ function parseCSV(text, sep) {
   }
   if (field || cur.length) { cur.push(field); rows.push(cur); }
   return rows.filter(r => r.length > 1 || (r[0] && r[0].length));
+}
+
+// Import instructors from a simple CSV/TSV: columns are name and (optional)
+// min_load. Headers are case-insensitive; both 'min_load' and 'minLoad' work.
+function importInstructors(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = String(e.target.result || '').replace(/^﻿/, '');
+    const sep = file.name.toLowerCase().endsWith('.tsv') ? '\t' : ',';
+    try {
+      const rows = parseCSV(text, sep);
+      if (!rows.length) throw new Error('Empty file');
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      const nameIdx = headers.findIndex(h => h === 'name' || h === 'instructor' || h === 'الاسم');
+      const minIdx  = headers.findIndex(h => h === 'min_load' || h === 'minload' || h === 'min' || h === 'الحد الأدنى');
+      let added = 0, skipped = 0;
+      mutate(() => {
+        rows.slice(1).forEach(cols => {
+          const name = (cols[nameIdx >= 0 ? nameIdx : 0] || '').trim();
+          if (!name) return;
+          if (State.instructors.some(i => i.name === name)) { skipped++; return; }
+          const minLoad = parseInt(cols[minIdx], 10) || 12;
+          State.instructors.push({ name, minLoad });
+          added++;
+        });
+      });
+      renderInstructors();
+      renderSchedule();
+      toast(`${t('imported')}: ${added}${skipped ? ` (${skipped} duplicates)` : ''}`, 'ok');
+    } catch (err) {
+      toast('Import failed: ' + err.message, 'bad');
+    }
+  };
+  reader.readAsText(file);
 }
 
 function importFile(file) {
@@ -3012,6 +3488,11 @@ function init() {
   document.getElementById('fileImport').addEventListener('change', (e) => {
     const f = e.target.files[0];
     if (f) importFile(f);
+    e.target.value = '';
+  });
+  document.getElementById('fileImportInstr').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (f) importInstructors(f);
     e.target.value = '';
   });
 
