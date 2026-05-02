@@ -198,19 +198,22 @@
   .empty-title { font-family: 'Fraunces', serif; font-size: 18px; color: var(--ink-soft); margin-bottom: 6px; }
   .empty-sub { font-size: 13px; margin-bottom: 18px; }
 
-  /* LEVEL SECTION — distinct from sections via warmer fill + accent stripe */
+  /* LEVEL — clean white container with a navy top accent.
+     The container is the calmest surface; warmth lives on the section
+     cards inside, so the eye reads outer→inner = cool→warm→cool. */
   .level-section {
-    background: var(--paper-warmer);
+    background: var(--card);
     border: 1px solid var(--rule);
-    border-left: 4px solid var(--accent);
+    border-top: 4px solid var(--accent);
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 18px 20px 20px;
     margin-bottom: 20px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
   }
-  body[dir="rtl"] .level-section {
+  body[dir="rtl"] .level-section { /* override v3 left stripe */
     border-left: 1px solid var(--rule);
-    border-right: 4px solid var(--accent);
+    border-right: 1px solid var(--rule);
+    border-top: 4px solid var(--accent);
   }
   .level-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -647,6 +650,7 @@
   body[dir="rtl"] .view-week-btn { right: auto; left: 0; }
   .view-week-btn:hover { background: var(--paper-warm); }
 </style>
+<script type="application/json" id="xlsx-template-data">{"prefix":"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" mc:Ignorable=\"x14ac xr xr2 xr3\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xr=\"http://schemas.microsoft.com/office/spreadsheetml/2014/revision\" xmlns:xr2=\"http://schemas.microsoft.com/office/spreadsheetml/2015/revision2\" xmlns:xr3=\"http://schemas.microsoft.com/office/spreadsheetml/2016/revision3\" xr:uid=\"{56C5DDB1-BABB-4645-9425-D3504F3AD10A}\"><dimension ref=\"A1:L67\"/><sheetViews><sheetView tabSelected=\"1\" workbookViewId=\"0\"><selection sqref=\"A1:L1\"/></sheetView></sheetViews><sheetFormatPr baseColWidth=\"10\" defaultRowHeight=\"16\" x14ac:dyDescent=\"0.2\"/><sheetData><row r=\"1\" spans=\"1:12\" ht=\"19\" x14ac:dyDescent=\"0.25\"><c r=\"A1\" s=\"1\" t=\"s\"><v>0</v></c><c r=\"B1\" s=\"2\"/><c r=\"C1\" s=\"2\"/><c r=\"D1\" s=\"2\"/><c r=\"E1\" s=\"2\"/><c r=\"F1\" s=\"2\"/><c r=\"G1\" s=\"2\"/><c r=\"H1\" s=\"2\"/><c r=\"I1\" s=\"2\"/><c r=\"J1\" s=\"2\"/><c r=\"K1\" s=\"2\"/><c r=\"L1\" s=\"2\"/></row><row r=\"2\" spans=\"1:12\" x14ac:dyDescent=\"0.2\"><c r=\"A2\" s=\"3\"/><c r=\"B2\" s=\"2\"/><c r=\"C2\" s=\"2\"/><c r=\"D2\" s=\"2\"/><c r=\"E2\" s=\"2\"/><c r=\"F2\" s=\"2\"/><c r=\"G2\" s=\"2\"/><c r=\"H2\" s=\"2\"/><c r=\"I2\" s=\"2\"/><c r=\"J2\" s=\"2\"/><c r=\"K2\" s=\"2\"/><c r=\"L2\" s=\"2\"/></row><row r=\"3\" spans=\"1:12\" x14ac:dyDescent=\"0.2\"><c r=\"A3\" s=\"4\"/><c r=\"B3\" s=\"4\"/><c r=\"C3\" s=\"4\"/><c r=\"D3\" s=\"4\"/><c r=\"E3\" s=\"4\"/><c r=\"F3\" s=\"4\"/><c r=\"G3\" s=\"5\" t=\"s\"><v>1</v></c><c r=\"H3\" s=\"5\"/><c r=\"I3\" s=\"5\"/><c r=\"J3\" s=\"5\" t=\"s\"><v>2</v></c><c r=\"K3\" s=\"5\"/><c r=\"L3\" s=\"5\"/></row><row r=\"4\" spans=\"1:12\" ht=\"26\" x14ac:dyDescent=\"0.2\"><c r=\"A4\" s=\"6\" t=\"s\"><v>3</v></c><c r=\"B4\" s=\"6\" t=\"s\"><v>4</v></c><c r=\"C4\" s=\"6\" t=\"s\"><v>5</v></c><c r=\"D4\" s=\"6\" t=\"s\"><v>6</v></c><c r=\"E4\" s=\"6\" t=\"s\"><v>7</v></c><c r=\"F4\" s=\"6\" t=\"s\"><v>8</v></c><c r=\"G4\" s=\"7\" t=\"s\"><v>9</v></c><c r=\"H4\" s=\"6\" t=\"s\"><v>10</v></c><c r=\"I4\" s=\"6\" t=\"s\"><v>11</v></c><c r=\"J4\" s=\"8\" t=\"s\"><v>9</v></c><c r=\"K4\" s=\"6\" t=\"s\"><v>10</v></c><c r=\"L4\" s=\"6\" t=\"s\"><v>11</v></c></row>","suffix":"<mergeCells count=\"12\"><mergeCell ref=\"A23:A29\"/><mergeCell ref=\"A30:A38\"/><mergeCell ref=\"A39:A47\"/><mergeCell ref=\"A48:A63\"/><mergeCell ref=\"A64:A65\"/><mergeCell ref=\"A66:A67\"/><mergeCell ref=\"A1:L1\"/><mergeCell ref=\"A2:L2\"/><mergeCell ref=\"G3:I3\"/><mergeCell ref=\"J3:L3\"/><mergeCell ref=\"A5:A12\"/><mergeCell ref=\"A13:A21\"/></mergeCells><conditionalFormatting sqref=\"H5:H63\"><cfRule type=\"expression\" dxfId=\"1\" priority=\"11\"><formula>AND(AND(H5&lt;&gt;\"\",H5&lt;&gt;\"N/A\",H5&lt;&gt;\"CS Instructor\",H5&lt;&gt;\"CN Instructor\",G5&lt;&gt;\"\",F5&lt;&gt;\"\"),COUNTIFS($H$4:$H$62,H5,$G$4:$G$62,G5,$F$4:$F$62,F5)+COUNTIFS($K$4:$K$62,H5,$J$4:$J$62,G5,$F$4:$F$62,F5)&gt;1)</formula></cfRule></conditionalFormatting><conditionalFormatting sqref=\"K5:K63\"><cfRule type=\"expression\" dxfId=\"0\" priority=\"12\"><formula>AND(AND(K5&lt;&gt;\"\",K5&lt;&gt;\"N/A\",K5&lt;&gt;\"CS Instructor\",K5&lt;&gt;\"CN Instructor\",J5&lt;&gt;\"\",F5&lt;&gt;\"\"),COUNTIFS($K$4:$K$62,K5,$J$4:$J$62,J5,$F$4:$F$62,F5)+COUNTIFS($H$4:$H$62,K5,$G$4:$G$62,J5,$F$4:$F$62,F5)&gt;1)</formula></cfRule></conditionalFormatting><pageMargins left=\"0.7\" right=\"0.7\" top=\"0.75\" bottom=\"0.75\" header=\"0.3\" footer=\"0.3\"/></worksheet>","others":[{"name":"[Content_Types].xml","method":8,"crc":1755180642,"uncSize":1168,"compSize":350,"data":"rJTLTsMwEEX3SPxD5C1K3LJACDXtgscSKlE+wMSTxqpjW55paf+eifsQQqEVajexEs/cezLxzWiybm22gojGu1IMi4HIwFVeGzcvxcfsJb8XGZJyWlnvoBQbQDEZX1+NZpsAmHG3w1I0ROFBSqwaaBUWPoDjndrHVhHfxrkMqlqoOcjbweBOVt4ROMqp0xDj0RPUamkpe17z4y1JBIsie9wWdl6lUCFYUyliUrly+pdLvnMouDPVYGMC3jCGkL0O3c7fBru+Nx5NNBqyqYr0qlrGkGsrv3xcfHq/KI6L9FD6ujYVaF8tW55AgSGC0tgAUGuLtBatMm7PfcQ/FaNMy/DCIN37JeETHMTfG2S6no+QZE4YIm0s4KXHnkRPOTcqgn6nyMm4OMBP7WMcfG6m0QfkBEX4/xT2Eem688BCEMnAISR9h+3gyOk7e+zQ5VuD7vGW6X8y/gYAAP//AwA="},{"name":"_rels/.rels","method":8,"crc":590370229,"uncSize":588,"compSize":244,"data":"rJJNT8MwDIbvSPyHyPfV3ZAQQkt3QUi7IVR+gEncD7WNoyQb3b8nHBBUGoMDR3+9fvzK2908jerIIfbiNKyLEhQ7I7Z3rYaX+nF1ByomcpZGcazhxBF21fXV9plHSnkodr2PKqu4qKFLyd8jRtPxRLEQzy5XGgkTpRyGFj2ZgVrGTVneYviuAdVCU+2thrC3N6Dqk8+bf9eWpukNP4g5TOzSmRXIc2Jn2a58yGwh9fkaVVNoOWmwYp5yOiJ5X2RswPNEm78T/XwtTpzIUiI0Evgyz0fHJaD1f1q0NPHLnXnENwnDq8jwyYKLH6jeAQAA//8DAA=="},{"name":"xl/workbook.xml","method":8,"crc":3479046795,"uncSize":2419,"compSize":944,"data":"rFZtb6M4EP5+0v0HxHeKDeYlqOmKV12ldlWl2fbu08oFp6ACzhnTpKr2v++YQNI2p1Oue1GCsT08fmbmmSHnX7ZNrT0z0VW8nev4DOkaa3NeVO3jXP+2zAxf1zpJ24LWvGVz/YV1+peL338733Dx9MD5kwYAbTfXSynXgWl2ecka2p3xNWthZ8VFQyVMxaPZrQWjRVcyJpvatBByzYZWrb5DCMQpGHy1qnKW8LxvWCt3IILVVAL9rqzW3YTW5KfANVQ89Wsj580aIB6qupIvA6iuNXlw+dhyQR9qcHuLHW0r4OvCDyO4WNNJsHV0VFPlgnd8Jc8A2tyRPvIfIxPjdyHYHsfgNCRiCvZcqRzuWQn3k6zcPZZ7AMPol9EwSGvQSgDB+ySas+dm6Rfnq6pmdzvpanS9/koblala12raybSoJCvmugdTvmHvFkS/jvqqhl2MiOXq5sVezjdCK9iK9rVcgpAn+LluIctGSFmCMMJaMtFSyWLeStDh6Nevam7AjksOCtcW7O++EgwKC/QFvsKV5gF96G6oLLVe1HPd/NaB8yYtWG0mfNPWHKrLfCNLelwD/0GYNFfemuDujtLu/qPrwEwEk/hupNDg/jK5ggTc0mdIByS9GKv1EuLtf3+1rdRO09Q2YuTYRuoS6DFO7Bh27KQ4Dv0IZckP8EK4Qc5pL8sxxQpzrhPI59HWNd1OOxgFfVUczn9F48dQ44fLtPdDeaqa2V3FNt1BDGqqbe+rtuAb0ArxwZuX/dR1YboZNu+rQpYgEs8i+7U/WPVYAmPsuCAc1TEUs7n+SvAMp2E8M6zYB7cxwUboW8SwvNnMnUUotTw8MDLfUBraJlAbRq0dpH6rWimG/qxGFV24F4E6Q1wWeMje9FhO6xykrYbB0MfImikLtpVXnRxGUFUF9DBBoYdmxECp7RjEn1mGT2zLiElipY6XJmnkqPyoth/8H81vEHcwvU8Uy5IKuRQ0f4K30IKtItqBknYOAd+3ZCMH9GIDRZLhzIDIIiOKXGI4SWY7Hk7i1MkOZJX7q0+2Ht8cnmZU9lCWqiKHeaCu2bi6X1ztFsY8vSu6YJGouI9P/5vhLXhfsxONs7sTDeOv18vrE22v0uX3++xU4/A6SsLT7cPFIvxrmf45HWH+Y0DNDwlPMJkhOw0N246JQbzMM/wMQRkRj8QOiVKMvEPC603+/Ll8W8ScFBm//XcwNiOVfwUejH+dtI7JcQvawFB6A3FFf6ivPdrFTwAAAP//AwA="},{"name":"xl/_rels/workbook.xml.rels","method":8,"crc":2543074945,"uncSize":698,"compSize":243,"data":"rFJNS8QwEL0L/ocwd5t2FRHZdC8i7FXrDwjJtCnbJiEzfvTfGyq6XVjWSy8Db4Z5783Hdvc1DuIDE/XBK6iKEgR6E2zvOwVvzfPNAwhi7a0egkcFExLs6uur7QsOmnMTuT6SyCyeFDjm+CglGYejpiJE9LnShjRqzjB1Mmpz0B3KTVney7TkgPqEU+ytgrS3tyCaKWbl/7lD2/YGn4J5H9HzGQlJPA15ANHo1CEr+MFF9gjyvPxmTXnOa8Gj+gzlHKtLHqo1PXyGdCCHyEcffymSc+WimbtV7+F0QvvKKb/b8izL9O9m5MnH1d8AAAD//wMA"},{"name":"xl/theme/theme1.xml","method":8,"crc":1102340342,"uncSize":8721,"compSize":1976,"data":"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"},{"name":"xl/styles.xml","method":8,"crc":4183660308,"uncSize":22794,"compSize":1785,"data":"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"},{"name":"xl/sharedStrings.xml","method":8,"crc":3924548022,"uncSize":655,"compSize":369,"data":"dJLBSsNAEIbvhb7Dsne7bUERSVKwIohFQesDhGRtA8luzG6KvUltpPbsG/RQrUKpOfVNdq8+idMkB02UnHbm/7/5dydG5z7w0YhGwuPMxK1GEyPKHO56bGDim/7p3iFGQtrMtX3OqInHVOCOVa8ZQkgEXiZMPJQyPCJEOEMa2KLBQ8qgc8ujwJZwjAZEhBG1XTGkVAY+aTebBySwPYaRw2MmYe4+RjHz7mLaLQptbBnCswxpQSUSFF0D3Y19ir4eXpD6UGs901OklnqqEz1RG/iWapUV1Do7pHqu3gwiLYPsSDntuHfZPUetnAJm9QqAmX7MjYsd9G9L+x/LO0R40vOyqUdH1K/X8nwqVSsgP5dFXe7SXKM2OlGf1X529Qs7yGQq1cmvG5f1/XFY8CDSTG0rvAimpeXqiT0WRYoFPNlSJxWulwfInmqiVuX+GRMyih3Jd/xsI9kKKpOuOA8KxQS2tf25HgI/lPUNAAD//wMA"},{"name":"docProps/core.xml","method":8,"crc":3687915802,"uncSize":647,"compSize":336,"data":"jJJfS8MwFMXfBb9DyXubtGNTS9sxleGDA8GJ4ltM7tZi84ck2u3bm7ZbrUzEx/ac+7vnXJLNd6IOPsHYSskcxRFBAUimeCW3OXpaL8NLFFhHJae1kpCjPVg0L87PMqZTpgw8GKXBuAps4EnSpkznqHROpxhbVoKgNvIO6cWNMoI6/2m2WFP2TreAE0JmWICjnDqKW2CoByI6IDkbkPrD1B2AMww1CJDO4jiK8bfXgRH214FOGTlF5fbadzrEHbM568XBvbPVYGyaJmomXQyfP8Yvq/vHrmpYyfZWDFCRcZYyA9QpUyw41MFKlVQI4MGd4FQGi/rNlqbK8MjX3rSm1q38+TcV8Ov936Ondr+1K9mv9st87LQveVSeJze36yUqEpLMQjINSbIm05RcpEn82qb5Md/W6H+IQ6b/E6/SCRkRj4AiwydPp/gCAAD//wMA"},{"name":"docProps/app.xml","method":8,"crc":140074690,"uncSize":795,"compSize":400,"data":"nJJNb9swDIbvA/ofDN0bOW1RDIGsYkhX9LBiAZJ2Z06mY6GyJIiskezXT7bR1Nl22o0fL14+oqjuDp0rekxkg6/EclGKAr0JtfX7SjzvHi4/i4IYfA0ueKzEEUnc6YtPapNCxMQWqcgWnirRMseVlGRa7IAWue1zpwmpA85p2svQNNbgfTBvHXqWV2V5K/HA6GusL+PJUEyOq57/17QOZuCjl90xZmCtvsTorAHOr9RP1qRAoeHiCYz1HKgtvh4MOiXnMpU5t2jekuWjLpWcp2prwOE6j9ANOEIlPwrqEWFY3wZsIq16XvVoOKSC7K+8wCtR/ATCAawSPSQLnjPgIJuSMXaROOkfIb1Si8ikZBZMxTGca+exvdHLUZCDc+FgMIHkxjnizrJD+t5sIPE/iJdz4pFh4p1wtgPfNHPONz45T/rDex26CP6YG6fom/Wv9Bx34R4Y39d5XlTbFhLW+QdO6z4V1GPeZHKDyboFv8f6XfN3YziDl+nW9fJ2UV6X+V9nNSU/rlr/BgAA//8DAA=="}]}</script>
 </head>
 <body>
 
@@ -2916,27 +2920,32 @@ function crc32(bytes) {
 }
 const _enc = new TextEncoder();
 
-// files: [{name, data: Uint8Array}]
+// files: [{ name, data: Uint8Array, method?: 0|8, crc?, uncSize? }]
+//   method=0 (STORE): we compute crc; data length is both compressed and
+//     uncompressed size.
+//   method=8 (DEFLATE): caller supplies precomputed crc and uncSize so
+//     pre-compressed bytes from the template pass through verbatim.
 function makeZip(files) {
   const local = [];
   const central = [];
   let offset = 0;
   files.forEach(f => {
+    const method = f.method == null ? 0 : f.method;
     const nameBytes = _enc.encode(f.name);
-    const crc = crc32(f.data);
-    const size = f.data.length;
-    // Local file header (30 + name)
+    const crc = method === 0 ? crc32(f.data) : f.crc;
+    const compSize = f.data.length;
+    const uncSize = method === 0 ? f.data.length : f.uncSize;
     const lh = new Uint8Array(30 + nameBytes.length);
     const dv = new DataView(lh.buffer);
-    dv.setUint32(0, 0x04034b50, true);   // signature
-    dv.setUint16(4, 20, true);           // version
-    dv.setUint16(6, 0, true);            // flags
-    dv.setUint16(8, 0, true);            // method (STORE)
-    dv.setUint16(10, 0, true);           // mod time
-    dv.setUint16(12, 0x21, true);        // mod date (1980-01-01)
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0, true);
+    dv.setUint16(8, method, true);
+    dv.setUint16(10, 0, true);
+    dv.setUint16(12, 0x21, true);
     dv.setUint32(14, crc, true);
-    dv.setUint32(18, size, true);
-    dv.setUint32(22, size, true);
+    dv.setUint32(18, compSize, true);
+    dv.setUint32(22, uncSize, true);
     dv.setUint16(26, nameBytes.length, true);
     dv.setUint16(28, 0, true);
     lh.set(nameBytes, 30);
@@ -2945,21 +2954,21 @@ function makeZip(files) {
     const ch = new Uint8Array(46 + nameBytes.length);
     const dv2 = new DataView(ch.buffer);
     dv2.setUint32(0, 0x02014b50, true);
-    dv2.setUint16(4, 20, true);          // version made by
+    dv2.setUint16(4, 20, true);
     dv2.setUint16(6, 20, true);
     dv2.setUint16(8, 0, true);
-    dv2.setUint16(10, 0, true);
+    dv2.setUint16(10, method, true);
     dv2.setUint16(12, 0, true);
     dv2.setUint16(14, 0x21, true);
     dv2.setUint32(16, crc, true);
-    dv2.setUint32(20, size, true);
-    dv2.setUint32(24, size, true);
+    dv2.setUint32(20, compSize, true);
+    dv2.setUint32(24, uncSize, true);
     dv2.setUint16(28, nameBytes.length, true);
     dv2.setUint32(42, offset, true);
     ch.set(nameBytes, 46);
     central.push(ch);
 
-    offset += lh.length + size;
+    offset += lh.length + compSize;
   });
 
   let centralSize = 0;
@@ -3085,60 +3094,139 @@ function buildWorkbook(sheets) {
 //   Row 4: column headers (bilingual EN \n AR)
 //   Row 5+: one row per section (Block 1 cols G-I, Block 2 cols J-L)
 // Plus an extra Grid sheet for the weekly view.
-function exportXlsx() {
-  const title = 'Course Schedule — جدول المقررات الدراسية';
-  const supBlock1 = 'BLOCK 1 — البلوك الأول';
-  const supBlock2 = 'BLOCK 2 — البلوك الثاني';
-  const H = (en, ar) => `${en}\n${ar}`;
+// =============================================================
+// Course_Schedule_Template.xlsx export (preserves the exact
+// design + coloring of the template; only the data rows are filled
+// in). The template's other parts (styles, theme, sharedStrings,
+// workbook, etc.) are passed through verbatim from embedded bytes.
+// =============================================================
 
-  // Schedule sheet (single 12-column layout)
-  const sheet1 = [
-    [title],            // row 1
-    [],                 // row 2 (blank)
-    ['','','','','','', supBlock1, '', '', supBlock2, '', ''], // row 3
-    [
-      H('Level','المستوى'), H('Code','الرمز'), H('Course Name','اسم المقرر'),
-      H('Type','النوع'), H('Cr','س'), H('Days','الأيام'),
-      H('Time','الوقت'), H('Instructor','المدرس'), H('Room','القاعة'),
-      H('Time','الوقت'), H('Instructor','المدرس'), H('Room','القاعة'),
-    ],
-  ];
-  let truncated = 0;
-  State.rows.forEach(r => {
-    const lv = State.levels.find(l => l.id === r.levelId);
-    const typeLabel = (TYPES.find(t => t.code === r.type) || {}).en || r.type;
-    const b1 = r.blocks[0] || { time:'', instr:'', room:'' };
-    const b2 = r.blocks[1] || { time:'', instr:'', room:'' };
-    if (r.blocks.length > 2) truncated++;
-    sheet1.push([
-      lv ? lv.name : '', r.code || '', r.name || '',
-      typeLabel, r.credits || 0, r.days || '',
-      b1.time || '', b1.instr || '', b1.room || '',
-      b2.time || '', b2.instr || '', b2.room || '',
-    ]);
+function _b64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// The template's data row 5 cell style indices (looked up from the
+// extracted sheet1.xml of Course_Schedule_Template.xlsx).
+//   First line of a level group:    [9,10,11,10,10,12,13,14,10,15,14,10]
+//   Following lines (same level):   [9,17,18,17,17,19,20,21,17,22,21,17]
+//                                   alternating with
+//                                   [9,10,11,10,10,16,23,14,10,15,14,10]
+// Last line (thickBot) of group:    [38..44 etc.] — we use a closer
+// row pattern to keep it simple and readable.
+function _buildSheet1Xml(prefix, suffix) {
+  const lines = [];
+  // Group rows by level, preserving the order of State.levels then any
+  // orphan rows (no level) at the end.
+  const groups = [];
+  State.levels.forEach(lv => {
+    const inLv = State.rows.filter(r => r.levelId === lv.id);
+    if (inLv.length) groups.push({ level: lv, rows: inLv });
   });
+  const orphans = State.rows.filter(r => !State.levels.some(l => l.id === r.levelId));
+  if (orphans.length) groups.push({ level: { name: '' }, rows: orphans });
 
-  // Grid sheet (day × time)
-  const slotsAll = allSlotsSorted();
-  const gridRows = [['', 'Sun (U)', 'Mon (M)', 'Tue (T)', 'Wed (W)', 'Thu (R)']];
-  const sessions = buildSessions();
-  slotsAll.forEach(slot => {
-    const row = [`${slot.code} ${slot.kind}`];
-    ['U','M','T','W','R'].forEach(day => {
-      const cell = sessions
-        .filter(s => s.day === day && s.slotCode === slot.code)
-        .map(s => `${s.code} B${s.blockIdx + 1}${s.instr ? ' / ' + s.instr : ''}${s.room ? ' / ' + s.room : ''}`)
-        .join(' | ');
-      row.push(cell);
+  // Style patterns (row 5/6/7/8 from the template)
+  const STYLE_TOP_ODD  = [9,10,11,10,10,12,13,14,10,15,14,10];
+  const STYLE_EVEN     = [9,17,18,17,17,19,20,21,17,22,21,17];
+  const STYLE_MID_ODD  = [9,10,11,10,10,16,23,14,10,15,14,10];
+
+  let rNum = 5;
+  const merges = ['A1:L1', 'A2:L2', 'G3:I3', 'J3:L3'];
+
+  // Cell renderer
+  const cellXml = (col, row, sIdx, value, isNum) => {
+    const ref = colLetter(col + 1) + row;
+    if (value === '' || value == null) return `<c r="${ref}" s="${sIdx}"/>`;
+    if (isNum && typeof value === 'number' && Number.isFinite(value)) {
+      return `<c r="${ref}" s="${sIdx}"><v>${value}</v></c>`;
+    }
+    return `<c r="${ref}" s="${sIdx}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+  };
+
+  groups.forEach(g => {
+    const lvName = g.level.name || '';
+    const startRow = rNum;
+    g.rows.forEach((r, idx) => {
+      const b1 = r.blocks[0] || { time:'', instr:'', room:'' };
+      const b2 = r.blocks[1] || { time:'', instr:'', room:'' };
+      const typeLabel = (TYPES.find(t => t.code === r.type) || {}).en || r.type;
+      const cells = [
+        idx === 0 ? lvName : '',  // A (level name only on first row of group)
+        r.code || '',             // B
+        r.name || '',             // C
+        typeLabel,                // D
+        r.credits || 0,           // E
+        r.days || '',             // F
+        b1.time || '',            // G
+        b1.instr || '',           // H
+        b1.room || '',            // I
+        b2.time || '',            // J
+        b2.instr || '',           // K
+        b2.room || '',            // L
+      ];
+      // Pick style pattern: idx=0 → TOP_ODD, even idx → EVEN, odd → MID_ODD
+      const styles = idx === 0 ? STYLE_TOP_ODD : (idx % 2 === 1 ? STYLE_EVEN : STYLE_MID_ODD);
+      let row = `<row r="${rNum}" spans="1:12" x14ac:dyDescent="0.2">`;
+      for (let c = 0; c < 12; c++) {
+        row += cellXml(c, rNum, styles[c], cells[c], c === 4);
+      }
+      row += '</row>';
+      lines.push(row);
+      rNum++;
     });
-    gridRows.push(row);
+    // Merge the level name down the group
+    if (g.rows.length > 1 && lvName) {
+      merges.push(`A${startRow}:A${startRow + g.rows.length - 1}`);
+    }
   });
 
-  const sheets = [
-    { name: 'Course Schedule', rows: sheet1 },
-    { name: 'Grid', rows: gridRows },
-  ];
-  const bytes = buildWorkbook(sheets);
+  const lastRow = Math.max(rNum - 1, 4);
+  // Find and replace the dimension reference in the prefix
+  const newPrefix = prefix.replace(/<dimension ref="A1:L\d+"\/>/, `<dimension ref="A1:L${lastRow}"/>`);
+
+  // Compose suffix: <mergeCells>...</mergeCells><pageMargins .../></worksheet>
+  const mergeCellsXml =
+    `<mergeCells count="${merges.length}">` +
+    merges.map(m => `<mergeCell ref="${m}"/>`).join('') +
+    `</mergeCells>`;
+  // Strip any existing mergeCells/conditionalFormatting from suffix; keep
+  // only pageMargins through </worksheet>.
+  let cleanSuffix = suffix;
+  cleanSuffix = cleanSuffix.replace(/<mergeCells[\s\S]*?<\/mergeCells>/, '');
+  cleanSuffix = cleanSuffix.replace(/<conditionalFormatting[\s\S]*?<\/conditionalFormatting>/g, '');
+
+  return newPrefix + lines.join('') + '</sheetData>' + mergeCellsXml + cleanSuffix.replace(/^<\/sheetData>/, '');
+}
+
+function exportXlsx() {
+  const tplEl = document.getElementById('xlsx-template-data');
+  if (!tplEl) { toast('Template missing', 'bad'); return; }
+  const tpl = JSON.parse(tplEl.textContent);
+  const sheet1Xml = _buildSheet1Xml(tpl.prefix, tpl.suffix);
+
+  const files = [];
+  // Pass-through for every other file from the original template.
+  tpl.others.forEach(o => {
+    files.push({
+      name: o.name,
+      data: _b64ToBytes(o.data),
+      method: o.method,
+      crc: o.crc,
+      uncSize: o.uncSize,
+    });
+  });
+  // Replace sheet1.xml with our generated content (STORE method).
+  files.push({
+    name: 'xl/worksheets/sheet1.xml',
+    data: _enc.encode(sheet1Xml),
+  });
+  // Sort to roughly match the original layout (cosmetic).
+  files.sort((a, b) => a.name.localeCompare(b.name));
+
+  const bytes = makeZip(files);
   const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -3146,6 +3234,7 @@ function exportXlsx() {
   a.download = 'Course_Schedule_Template.xlsx';
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  const truncated = State.rows.filter(r => r.blocks.length > 2).length;
   if (truncated) toast(`${truncated} section(s) had >2 blocks — extras dropped to fit template`, 'warn');
 }
 

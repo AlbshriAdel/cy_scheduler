@@ -808,6 +808,201 @@ check('xlsx default name is Course_Schedule_Template',
   xlsxDl.suggestedFilename() === 'Course_Schedule_Template.xlsx',
   xlsxDl.suggestedFilename());
 
+// ─────────────────────────────────────────────────────────
+// CONFLICT MATRIX — every edge case, in isolation
+// Each case seeds the state directly, reloads, and asserts on the
+// rules array returned by detectConflicts() in the page.
+// ─────────────────────────────────────────────────────────
+
+async function seedAndCheck(label, levels, rows, expected) {
+  await page.evaluate(({ levels, rows }) => {
+    localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+      levels, rows, instructors: [], lang: 'en',
+    }));
+  }, { levels, rows });
+  await page.reload();
+  await page.waitForSelector('#panel-schedule.active');
+  // Run the detector and pull issues out
+  const issues = await page.evaluate(() => {
+    // detectConflicts is inside an IIFE; trigger it by clicking Conflicts
+    // and reading the rendered .issue rules.
+    document.querySelector('.tab[data-tab="conflicts"]').click();
+    return Array.from(document.querySelectorAll('.issue .pill.pill-bad'))
+      .map(p => p.textContent.trim());
+  });
+  // Tally rules
+  const counts = { R5: 0, R6: 0, R7: 0 };
+  issues.forEach(r => { if (counts[r] != null) counts[r]++; });
+  const ok = JSON.stringify(counts) === JSON.stringify(expected);
+  check(`[matrix] ${label}`, ok,
+    `expected=${JSON.stringify(expected)} got=${JSON.stringify(counts)}`);
+}
+
+// Building blocks for matrix rows
+const lv = (name) => ({ id: 'L_' + name, name });
+const rowOf = (id, levelId, code, type, days, blocks) => ({
+  id, levelId, code, name: code, type, credits: 3, days,
+  blocks: blocks.map((b, i) => ({ id: id + '_b' + (i + 1), ...b })),
+});
+
+console.log('\n══ MATRIX: every conflict edge case ══');
+
+// C1: same row, B1+B2 same time same day → R5
+await seedAndCheck('C1 same-course self-overlap',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'X-1', 'lecture', 'M',
+    [{ time: '0800-0920', instr: '', room: '' },
+     { time: '0800-0920', instr: '', room: '' }])],
+  { R5: 1, R6: 0, R7: 0 });
+
+// C2: same row, two blocks at non-overlapping times → no conflict
+await seedAndCheck('C2 same-course non-overlap',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'X-1', 'lecture', 'M',
+    [{ time: '0800-0920', instr: '', room: '' },
+     { time: '0930-1050', instr: '', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C3: same row, two blocks at same time but different days → no conflict
+await seedAndCheck('C3 same-course different days',
+  [lv('L1')],
+  [
+    { id: 'r1', levelId: 'L_L1', code: 'X-1', name: 'X-1', type: 'lecture',
+      credits: 3, days: 'M', blocks: [{ id: 'b1', time: '0800-0920', instr: '', room: '' }] },
+    { id: 'r1b', levelId: 'L_L1', code: 'X-1', name: 'X-1', type: 'lecture',
+      credits: 3, days: 'W', blocks: [{ id: 'b2', time: '0800-0920', instr: '', room: '' }] },
+  ],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C4: different rows in same level, same time → no conflict (R5 is per-row only)
+await seedAndCheck('C4 different courses same level same time',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C5: different levels same time → no conflict
+await seedAndCheck('C5 different levels same time',
+  [lv('L1'), lv('L2')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }]),
+   rowOf('r2', 'L_L2', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C6: same instructor, two lecture blocks, same time → R6
+await seedAndCheck('C6 instructor double-book lecture+lecture',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }])],
+  { R5: 0, R6: 1, R7: 0 });
+
+// C7: same instructor, lecture + lab same time → R6 (both non-online)
+await seedAndCheck('C7 instructor double-book lecture+lab',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lab',     'M', [{ time: '0900-1040', instr: 'Dr. K', room: '' }])],
+  { R5: 0, R6: 1, R7: 0 });
+
+// C8: same instructor, lecture + online same time → no R6 (online excluded)
+await seedAndCheck('C8 instructor lecture+online no R6',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'online',  'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C9: same instructor, two online same time → no R6
+await seedAndCheck('C9 instructor two online no R6',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'online', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'online', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C10: different instructors same time → no R6
+await seedAndCheck('C10 different instructors no R6',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. A', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. B', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C11: same room, both non-online, same time → R7
+await seedAndCheck('C11 room double-book non-online',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: 'R-1' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: 'R-1' }])],
+  { R5: 0, R6: 0, R7: 1 });
+
+// C12: same room, one online → no R7
+await seedAndCheck('C12 room online excluded',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: 'R-1' }]),
+   rowOf('r2', 'L_L1', 'B', 'online',  'M', [{ time: '0800-0920', instr: '', room: 'R-1' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C13: multi-day pattern fires once per overlapping day (M,W → 2 conflicts)
+await seedAndCheck('C13 multi-day pattern fires per day',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'X', 'lecture', 'M,W',
+    [{ time: '0800-0920', instr: '', room: '' },
+     { time: '0800-0920', instr: '', room: '' }])],
+  { R5: 2, R6: 0, R7: 0 });
+
+// C14: partial overlap (08:00–09:20 vs 09:00–10:40 lab) → R6 if same instr
+await seedAndCheck('C14 partial overlap counts',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lab',     'M', [{ time: '0900-1040', instr: 'Dr. K', room: '' }])],
+  { R5: 0, R6: 1, R7: 0 });
+
+// C15: tangential times (08:00–09:00 vs 09:00–10:00 if such slots existed)
+//      In practice, our slot codes don't tangent perfectly; the closest is
+//      0800-0920 ending at 09:20 and 0930-1050 starting at 09:30 — gap of
+//      10 min so they're already non-overlapping. Verify same instr no R6.
+await seedAndCheck('C15 non-overlapping consecutive slots',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0930-1050', instr: 'Dr. K', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C16: same instructor + same room same time → BOTH R6 and R7
+await seedAndCheck('C16 instructor + room together',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: 'R-1' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: 'R-1' }])],
+  { R5: 0, R6: 1, R7: 1 });
+
+// C17: same row internal overlap + cross-row instructor double-book
+await seedAndCheck('C17 self-overlap stacked with cross-row R6',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M',
+    [{ time: '0800-0920', instr: 'Dr. K', room: '' },
+     { time: '0800-0920', instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }])],
+  // Pairs at M, 0800: (r1.b1↔r1.b2)=R5+R6, (r1.b1↔r2.b1)=R6, (r1.b2↔r2.b1)=R6
+  { R5: 1, R6: 3, R7: 0 });
+
+// C18: empty instructor / empty room shouldn't trigger R6 / R7
+await seedAndCheck('C18 missing instr+room no false positive',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C19: missing days (no time conflict possible)
+await seedAndCheck('C19 missing days no conflict',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', '', [{ time: '0800-0920', instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', '', [{ time: '0800-0920', instr: 'Dr. K', room: '' }])],
+  { R5: 0, R6: 0, R7: 0 });
+
+// C20: missing time on a block → no conflicts produced by that block
+await seedAndCheck('C20 missing time skipped',
+  [lv('L1')],
+  [rowOf('r1', 'L_L1', 'A', 'lecture', 'M',
+    [{ time: '0800-0920', instr: 'Dr. K', room: '' },
+     { time: '',          instr: 'Dr. K', room: '' }]),
+   rowOf('r2', 'L_L1', 'B', 'lecture', 'M', [{ time: '0800-0920', instr: 'Dr. K', room: '' }])],
+  // Only r1.b1↔r2.b1 fires R6.
+  { R5: 0, R6: 1, R7: 0 });
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');
