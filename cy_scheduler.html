@@ -688,6 +688,9 @@
   <button class="tab" role="tab" data-tab="courses" aria-selected="false">
     <span class="tab-dot"></span><span data-i18n="tab_courses">Courses</span>
   </button>
+  <button class="tab" role="tab" data-tab="settings" aria-selected="false">
+    <span class="tab-dot"></span><span data-i18n="tab_settings">Settings</span>
+  </button>
 </nav>
 
 <div id="dirtyBanner" class="dirty-banner hidden" role="status">
@@ -703,6 +706,7 @@
   <section class="panel" id="panel-versions" role="tabpanel"></section>
   <section class="panel" id="panel-instructors" role="tabpanel"></section>
   <section class="panel" id="panel-courses" role="tabpanel"></section>
+  <section class="panel" id="panel-settings" role="tabpanel"></section>
 </main>
 
 <div class="toast-stack" id="toastStack" aria-live="polite"></div>
@@ -729,7 +733,7 @@ const STORAGE_SNAPS = 'cy_sched_snapshots_v3';
 const LEGACY_SNAPS  = 'cy_sched_snapshots_v2';
 const HISTORY_CAP = 50;
 
-const DAY_PATTERNS = [
+const DEFAULT_DAY_PATTERNS = [
   { code: '', label: '—' },
   { code: 'U',     label: 'U (Sun)' },
   { code: 'M',     label: 'M (Mon)' },
@@ -744,7 +748,7 @@ const DAY_PATTERNS = [
   { code: 'M,W,R', label: 'M, W, R' },
 ];
 
-const LECTURE_SLOTS = [
+const DEFAULT_LECTURE_SLOTS = [
   { code: '0800-0920', start: 8*60,    end: 9*60+20 },
   { code: '0930-1050', start: 9*60+30, end: 10*60+50 },
   { code: '1100-1220', start: 11*60,   end: 12*60+20 },
@@ -752,7 +756,7 @@ const LECTURE_SLOTS = [
   { code: '1500-1620', start: 15*60,   end: 16*60+20 },
   { code: '1900-2040', start: 19*60,   end: 20*60+40 },
 ];
-const LAB_SLOTS = [
+const DEFAULT_LAB_SLOTS = [
   { code: '0900-1040', start: 9*60,    end: 10*60+40 },
   { code: '1100-1240', start: 11*60,   end: 12*60+40 },
   { code: '1300-1440', start: 13*60,   end: 14*60+40 },
@@ -760,6 +764,11 @@ const LAB_SLOTS = [
   { code: '1700-1840', start: 17*60,   end: 18*60+40 },
   { code: '2100-2240', start: 21*60,   end: 22*60+40 },
 ];
+
+// Live config — read from State.config; mutations rebuild affected dropdowns.
+const DAY_PATTERNS = () => State.config.dayPatterns;
+const LECTURE_SLOTS = () => State.config.lectureSlots;
+const LAB_SLOTS = () => State.config.labSlots;
 
 const TYPES = [
   { code: 'lecture', en: 'Lecture', ar: 'نظري' },
@@ -795,7 +804,19 @@ const I18N = {
     import: 'Import', export: 'Export ▾', print: 'Print',
     tab_schedule: 'Schedule', tab_grid: 'Grid', tab_conflicts: 'Conflicts',
     tab_versions: 'Versions', tab_instructors: 'Instructors',
-    tab_courses: 'Courses',
+    tab_courses: 'Courses', tab_settings: 'Settings',
+    settings_title: 'Settings',
+    settings_sub: 'Customise day patterns and time slots used in dropdowns.',
+    settings_days_h: 'Day patterns',
+    settings_days_help: 'Codes use letters U M T W R (Sun–Thu); combine with commas. Label is what appears in the dropdown.',
+    settings_lecture_h: 'Lecture time slots',
+    settings_lab_h: 'Lab time slots',
+    settings_slots_help: 'Set start and end (24h). Code is auto-generated.',
+    settings_reset: 'Reset to defaults',
+    settings_reset_confirm: 'Reset all settings to defaults?',
+    settings_added: 'Added',
+    label: 'Label',
+    start: 'Start', end: 'End',
     grid_title: 'Weekly grid',
     grid_sub: 'Day × time-slot view. Filter by instructor, level, room, or type.',
     grid_filter_instr: 'Instructor',
@@ -881,7 +902,19 @@ const I18N = {
     import: 'استيراد', export: 'تصدير ▾', print: 'طباعة',
     tab_schedule: 'الجدول', tab_grid: 'الشبكة', tab_conflicts: 'التعارضات',
     tab_versions: 'الإصدارات', tab_instructors: 'المدرسون',
-    tab_courses: 'المقررات',
+    tab_courses: 'المقررات', tab_settings: 'الإعدادات',
+    settings_title: 'الإعدادات',
+    settings_sub: 'تخصيص أنماط الأيام وفترات الوقت في القوائم المنسدلة.',
+    settings_days_h: 'أنماط الأيام',
+    settings_days_help: 'الرموز U M T W R (الأحد–الخميس)، تُجمع بفواصل. اللعنوان يظهر في القائمة.',
+    settings_lecture_h: 'فترات النظري',
+    settings_lab_h: 'فترات العملي',
+    settings_slots_help: 'حدّد البداية والنهاية (24س). الرمز يُولَّد تلقائياً.',
+    settings_reset: 'إعادة الافتراضات',
+    settings_reset_confirm: 'إعادة جميع الإعدادات للقيم الافتراضية؟',
+    settings_added: 'تم',
+    label: 'العنوان',
+    start: 'البداية', end: 'النهاية',
     grid_title: 'الشبكة الأسبوعية',
     grid_sub: 'عرض الأيام × الفترات. صفِّ حسب المدرس أو المستوى أو القاعة أو النوع.',
     grid_filter_instr: 'المدرس',
@@ -978,6 +1011,11 @@ const State = {
   history: [],
   future: [],
   gridFilters: { instr: '', level: '', room: '', type: '' },
+  config: {
+    dayPatterns: DEFAULT_DAY_PATTERNS.map(p => ({ ...p })),
+    lectureSlots: DEFAULT_LECTURE_SLOTS.map(s => ({ ...s })),
+    labSlots: DEFAULT_LAB_SLOTS.map(s => ({ ...s })),
+  },
 };
 
 const newId = (p='id') => p + '_' + Math.random().toString(36).slice(2, 9);
@@ -1021,6 +1059,7 @@ const Storage = {
         rows: State.rows,
         instructors: State.instructors,
         lang: State.lang,
+        config: State.config,
       };
       localStorage.setItem(STORAGE_STATE, JSON.stringify(data));
     } catch (e) { console.warn('save failed', e); }
@@ -1180,7 +1219,7 @@ function mutateCoalesced(fn) {
 // RULES / CONFLICTS
 // ====================================================================
 
-const slotsFor = (type) => type === 'lab' ? LAB_SLOTS : LECTURE_SLOTS;
+const slotsFor = (type) => type === 'lab' ? State.config.labSlots : State.config.lectureSlots;
 const findSlot = (type, code) => slotsFor(type).find(s => s.code === code) || null;
 const rangesOverlap = (a, b) => a.start < b.end && b.start < a.end;
 const expandDays = (s) => s ? s.split(',').map(x => x.trim()).filter(Boolean) : [];
@@ -1367,6 +1406,7 @@ function render() {
   renderVersions();
   renderInstructors();
   renderCourses();
+  renderSettings();
   applyI18nLabels();
   updateHistoryButtons();
   updateGate();
@@ -1582,7 +1622,7 @@ function typeSelect(section) {
 
 function daysSelect(section) {
   const sel = el('select', { class: 'field-select' });
-  DAY_PATTERNS.forEach(p => {
+  State.config.dayPatterns.forEach(p => {
     const opt = el('option', { value: p.code }, p.label);
     if (section.days === p.code) opt.selected = true;
     sel.appendChild(opt);
@@ -1744,11 +1784,11 @@ function addLevel() {
   mutate(() => { State.levels.push(newLevel('')); });
   renderSchedule();
   updateConflictBadge();
-  // Focus the new level's name input
   setTimeout(() => {
-    const cards = document.querySelectorAll('.level-section');
+    const cards = document.querySelectorAll('#panel-schedule .level-section');
     const last = cards[cards.length - 1];
-    if (last) last.querySelector('.level-name-input').focus();
+    const inp = last && last.querySelector('.level-name-input');
+    if (inp) inp.focus();
   }, 50);
 }
 
@@ -1905,8 +1945,8 @@ const DAY_LABEL = { U: 'Sun', M: 'Mon', T: 'Tue', W: 'Wed', R: 'Thu' };
 // Combined slot list, sorted by start time (lecture + lab interleaved).
 function allSlotsSorted() {
   const merged = [
-    ...LECTURE_SLOTS.map(s => ({ ...s, kind: 'lecture' })),
-    ...LAB_SLOTS.map(s => ({ ...s, kind: 'lab' })),
+    ...State.config.lectureSlots.map(s => ({ ...s, kind: 'lecture' })),
+    ...State.config.labSlots.map(s => ({ ...s, kind: 'lab' })),
   ];
   merged.sort((a, b) => a.start - b.start || a.end - b.end);
   return merged;
@@ -2286,6 +2326,217 @@ function removeInstructor(name) {
 }
 
 // ====================================================================
+// SETTINGS PANEL
+// ====================================================================
+
+function minToHHMM(m) {
+  const h = Math.floor(m / 60), mm = m % 60;
+  return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+function hhmmToMin(s) {
+  if (!s) return null;
+  const [h, m] = s.split(':').map(x => parseInt(x, 10));
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+}
+function slotCodeFromMins(start, end) {
+  const fmt = (m) => {
+    const h = Math.floor(m / 60), mm = m % 60;
+    return String(h).padStart(2, '0') + String(mm).padStart(2, '0');
+  };
+  return fmt(start) + '-' + fmt(end);
+}
+
+function renderSettings() {
+  const panel = document.getElementById('panel-settings');
+  clear(panel);
+  panel.appendChild(renderPanelHeader({
+    title: t('settings_title'),
+    sub: t('settings_sub'),
+    actions: [
+      el('button', {
+        class: 'btn btn-danger',
+        onclick: confirmResetConfig,
+      }, t('settings_reset')),
+    ],
+  }));
+
+  panel.appendChild(renderDayPatternsSection());
+  panel.appendChild(el('div', { style: 'height:18px;' }));
+  panel.appendChild(renderSlotsSection('lecture'));
+  panel.appendChild(el('div', { style: 'height:18px;' }));
+  panel.appendChild(renderSlotsSection('lab'));
+}
+
+function renderDayPatternsSection() {
+  const wrap = el('div', { class: 'level-section' });
+  wrap.appendChild(el('div', { class: 'level-head' },
+    el('div', {},
+      el('div', { class: 'level-name' }, t('settings_days_h')),
+      el('div', { class: 'level-meta' }, t('settings_days_help')),
+    ),
+  ));
+
+  const tbl = el('table', { class: 'data' });
+  tbl.appendChild(el('thead', {}, el('tr', {},
+    el('th', {}, t('code')),
+    el('th', {}, t('label')),
+    el('th', {}, ''),
+  )));
+  const tbody = el('tbody');
+  State.config.dayPatterns.forEach((p, idx) => {
+    const codeInp = el('input', { class: 'field-input', type: 'text', value: p.code });
+    codeInp.addEventListener('input', (e) =>
+      mutateCoalesced(() => { State.config.dayPatterns[idx].code = e.target.value; }));
+    codeInp.addEventListener('change', () => renderSchedule());
+    const labelInp = el('input', { class: 'field-input', type: 'text', value: p.label });
+    labelInp.addEventListener('input', (e) =>
+      mutateCoalesced(() => { State.config.dayPatterns[idx].label = e.target.value; }));
+    labelInp.addEventListener('change', () => renderSchedule());
+    tbody.appendChild(el('tr', {},
+      el('td', { style: 'min-width:120px;' }, codeInp),
+      el('td', {}, labelInp),
+      el('td', { style: 'width:40px;' },
+        el('button', { class: 'btn btn-ghost btn-icon', title: t('delete'),
+          onclick: () => removeDayPattern(idx) }, '✕'),
+      ),
+    ));
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(el('div', { class: 'table-wrap' }, tbl));
+
+  // Add form
+  const codeNew = el('input', { class: 'field-input', type: 'text', placeholder: 'M,W' });
+  const labelNew = el('input', { class: 'field-input', type: 'text', placeholder: 'M, W' });
+  wrap.appendChild(el('div', { class: 'add-form', style: 'margin-top:12px;' },
+    el('div', { class: 'field' }, el('label', { class: 'field-label' }, t('code')), codeNew),
+    el('div', { class: 'field' }, el('label', { class: 'field-label' }, t('label')), labelNew),
+    el('button', {
+      class: 'btn btn-primary',
+      onclick: () => {
+        const code = (codeNew.value || '').trim();
+        const label = (labelNew.value || '').trim() || code || '—';
+        mutate(() => {
+          State.config.dayPatterns.push({ code, label });
+        });
+        renderSettings();
+        renderSchedule();
+      },
+    }, '+'),
+  ));
+  return wrap;
+}
+
+function renderSlotsSection(kind) {
+  const list = kind === 'lab' ? State.config.labSlots : State.config.lectureSlots;
+  const wrap = el('div', { class: 'level-section' });
+  wrap.appendChild(el('div', { class: 'level-head' },
+    el('div', {},
+      el('div', { class: 'level-name' }, t(kind === 'lab' ? 'settings_lab_h' : 'settings_lecture_h')),
+      el('div', { class: 'level-meta' }, t('settings_slots_help')),
+    ),
+  ));
+
+  const tbl = el('table', { class: 'data' });
+  tbl.appendChild(el('thead', {}, el('tr', {},
+    el('th', {}, t('start')),
+    el('th', {}, t('end')),
+    el('th', {}, t('code')),
+    el('th', {}, ''),
+  )));
+  const tbody = el('tbody');
+  list.forEach((s, idx) => {
+    const startInp = el('input', { class: 'field-input', type: 'time', value: minToHHMM(s.start) });
+    const endInp   = el('input', { class: 'field-input', type: 'time', value: minToHHMM(s.end) });
+    const codeCell = el('td', { class: 'mono', style: 'color:var(--ink-faint);' }, s.code);
+
+    const update = () => {
+      const ns = hhmmToMin(startInp.value);
+      const ne = hhmmToMin(endInp.value);
+      if (ns == null || ne == null || ne <= ns) return;
+      mutate(() => {
+        list[idx].start = ns;
+        list[idx].end = ne;
+        list[idx].code = slotCodeFromMins(ns, ne);
+      });
+      codeCell.textContent = list[idx].code;
+      renderSchedule();
+    };
+    startInp.addEventListener('change', update);
+    endInp.addEventListener('change', update);
+
+    tbody.appendChild(el('tr', {},
+      el('td', { style: 'width:130px;' }, startInp),
+      el('td', { style: 'width:130px;' }, endInp),
+      codeCell,
+      el('td', { style: 'width:40px;' },
+        el('button', { class: 'btn btn-ghost btn-icon', title: t('delete'),
+          onclick: () => removeSlot(kind, idx) }, '✕'),
+      ),
+    ));
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(el('div', { class: 'table-wrap' }, tbl));
+
+  // Add form
+  const newStart = el('input', { class: 'field-input', type: 'time' });
+  const newEnd   = el('input', { class: 'field-input', type: 'time' });
+  wrap.appendChild(el('div', { class: 'add-form', style: 'margin-top:12px;' },
+    el('div', { class: 'field', style: 'max-width:160px;' },
+      el('label', { class: 'field-label' }, t('start')), newStart),
+    el('div', { class: 'field', style: 'max-width:160px;' },
+      el('label', { class: 'field-label' }, t('end')), newEnd),
+    el('button', {
+      class: 'btn btn-primary',
+      onclick: () => {
+        const ns = hhmmToMin(newStart.value);
+        const ne = hhmmToMin(newEnd.value);
+        if (ns == null || ne == null || ne <= ns) {
+          toast('Invalid time', 'bad'); return;
+        }
+        mutate(() => {
+          list.push({ code: slotCodeFromMins(ns, ne), start: ns, end: ne });
+          list.sort((a, b) => a.start - b.start);
+        });
+        renderSettings();
+        renderSchedule();
+      },
+    }, '+'),
+  ));
+  return wrap;
+}
+
+function removeDayPattern(idx) {
+  mutate(() => { State.config.dayPatterns.splice(idx, 1); });
+  renderSettings();
+  renderSchedule();
+}
+function removeSlot(kind, idx) {
+  const list = kind === 'lab' ? State.config.labSlots : State.config.lectureSlots;
+  mutate(() => { list.splice(idx, 1); });
+  renderSettings();
+  renderSchedule();
+}
+
+function confirmResetConfig() {
+  modal({
+    title: t('settings_reset_confirm'),
+    body: '',
+    danger: true,
+    confirmLabel: t('settings_reset'),
+    onConfirm: () => {
+      mutate(() => {
+        State.config.dayPatterns = DEFAULT_DAY_PATTERNS.map(p => ({ ...p }));
+        State.config.lectureSlots = DEFAULT_LECTURE_SLOTS.map(s => ({ ...s }));
+        State.config.labSlots = DEFAULT_LAB_SLOTS.map(s => ({ ...s }));
+      });
+      renderSettings();
+      renderSchedule();
+    },
+  });
+}
+
+// ====================================================================
 // COURSES PANEL
 // ====================================================================
 
@@ -2652,6 +2903,7 @@ function setTab(name) {
   if (name === 'instructors') renderInstructors();
   if (name === 'courses')     renderCourses();
   if (name === 'versions')    renderVersions();
+  if (name === 'settings')    renderSettings();
 }
 
 function setLang(l) {
@@ -2681,6 +2933,14 @@ function init() {
     });
     State.instructors = saved.instructors || [];
     State.lang = saved.lang || 'en';
+    if (saved.config) {
+      if (Array.isArray(saved.config.dayPatterns) && saved.config.dayPatterns.length)
+        State.config.dayPatterns = saved.config.dayPatterns;
+      if (Array.isArray(saved.config.lectureSlots) && saved.config.lectureSlots.length)
+        State.config.lectureSlots = saved.config.lectureSlots;
+      if (Array.isArray(saved.config.labSlots) && saved.config.labSlots.length)
+        State.config.labSlots = saved.config.labSlots;
+    }
   }
   State.snapshots = Storage.loadSnapshots();
   document.body.dir = State.lang === 'ar' ? 'rtl' : 'ltr';

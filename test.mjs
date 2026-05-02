@@ -37,8 +37,8 @@ check('schedule panel visible',
   await page.isVisible('#panel-schedule.active'));
 check('toolbar present',
   await page.isVisible('.toolbar .brand-title'));
-check('6 tabs rendered',
-  (await page.$$('.tab')).length === 6);
+check('7 tabs rendered',
+  (await page.$$('.tab')).length === 7);
 check('empty state shown',
   await page.isVisible('text=No levels yet'));
 check('conflict badge hidden at 0',
@@ -48,7 +48,7 @@ console.log('\n══ 2. ADD LEVEL ══');
 await page.click('button:has-text("+ Add level")');
 await settle();
 check('level card appears',
-  (await page.$$('.level-section')).length === 1);
+  (await page.$$('#panel-schedule .level-section')).length === 1);
 const levelInput = await page.$('.level-name-input');
 await levelInput.fill('Level 3');
 await page.keyboard.press('Tab');
@@ -377,7 +377,7 @@ await page.click('.level-section .level-actions button:last-child');
 await page.click('.modal-foot button.btn-danger');
 await settle();
 check('level removed',
-  (await page.$$('.level-section')).length === 0);
+  (await page.$$('#panel-schedule .level-section')).length === 0);
 check('cascading delete: sections gone',
   (await page.$$('.section-card')).length === 0);
 
@@ -592,6 +592,89 @@ const opened = await page.evaluate(() =>
 check('print menu opens when not dirty', opened);
 const items = await page.locator('#printMenu .menu-item').count();
 check('print menu has 2 items (active + grid)', items === 2);
+
+console.log('\n══ 31. SETTINGS: edit day pattern → reflected in dropdown ══');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('.tab:has-text("Settings")');
+await settle();
+check('settings panel active',
+  await page.isVisible('#panel-settings.active'));
+const daysRowsBefore = await page.locator('#panel-settings .level-section').first()
+  .locator('table.data tbody tr').count();
+check('day patterns table populated', daysRowsBefore >= 6);
+// Add a new day pattern: U,W,R + label
+const dayForms = page.locator('#panel-settings .level-section').first().locator('.add-form');
+await dayForms.locator('input').nth(0).fill('U,W,R');
+await dayForms.locator('input').nth(1).fill('Sun, Wed, Thu');
+await dayForms.locator('button.btn-primary').click();
+await settle();
+const daysRowsAfter = await page.locator('#panel-settings .level-section').first()
+  .locator('table.data tbody tr').count();
+check('day pattern added',
+  daysRowsAfter === daysRowsBefore + 1);
+// Now go to Schedule, add level + section, and verify the new pattern is in the dropdown
+await page.click('.tab:has-text("Schedule")'); await settle();
+await page.click('button:has-text("+ Add level")'); await settle();
+await page.fill('.level-name-input', 'L-S');
+await page.click('.level-section button:has-text("+ Add section")'); await settle();
+const daysSel = page.locator('.section-card .field:has-text("Days") select').first();
+const daysOpts = await daysSel.locator('option').allTextContents();
+check('new day pattern visible in section dropdown',
+  daysOpts.some(o => o.includes('Sun, Wed, Thu')),
+  daysOpts.join('|'));
+
+console.log('\n══ 32. SETTINGS: add custom time slot ══');
+await page.click('.tab:has-text("Settings")'); await settle();
+const lectureSec = page.locator('#panel-settings .level-section').nth(1);
+const slotsBefore = await lectureSec.locator('table.data tbody tr').count();
+const slotForm = lectureSec.locator('.add-form');
+await slotForm.locator('input[type="time"]').nth(0).fill('07:00');
+await slotForm.locator('input[type="time"]').nth(1).fill('07:50');
+await slotForm.locator('button.btn-primary').click();
+await settle();
+const slotsAfter = await lectureSec.locator('table.data tbody tr').count();
+check('lecture slot added',
+  slotsAfter === slotsBefore + 1);
+const stCfg = await readState();
+const newSlot = stCfg.config.lectureSlots.find(s => s.code === '0700-0750');
+check('new slot persisted with code 0700-0750',
+  newSlot && newSlot.start === 420 && newSlot.end === 470,
+  JSON.stringify(newSlot));
+// Verify slot is now in the time dropdown of any section
+await page.click('.tab:has-text("Schedule")'); await settle();
+const timeSel = page.locator('.section-card .block').first()
+  .locator('.field:has-text("Time") select');
+const timeOpts = await timeSel.locator('option').allTextContents();
+check('new time slot visible in time dropdown',
+  timeOpts.some(o => o.includes('0700-0750')),
+  timeOpts.join('|'));
+
+console.log('\n══ 33. SETTINGS: reset to defaults ══');
+await page.click('.tab:has-text("Settings")'); await settle();
+await page.click('button:has-text("Reset to defaults")');
+await page.click('.modal-foot button.btn-danger');
+await settle();
+const stReset = await readState();
+check('reset cleared custom slot',
+  !stReset.config.lectureSlots.some(s => s.code === '0700-0750'));
+check('reset cleared custom day pattern',
+  !stReset.config.dayPatterns.some(p => p.code === 'U,W,R'));
+
+console.log('\n══ 34. SETTINGS: persists across reload ══');
+await page.click('.tab:has-text("Settings")'); await settle();
+const slotForm2 = page.locator('#panel-settings .level-section').nth(2).locator('.add-form');
+await slotForm2.locator('input[type="time"]').nth(0).fill('06:30');
+await slotForm2.locator('input[type="time"]').nth(1).fill('07:30');
+await slotForm2.locator('button.btn-primary').click();
+await settle();
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+const stPersist = await readState();
+check('custom lab slot survived reload',
+  stPersist.config.labSlots.some(s => s.code === '0630-0730'));
 
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
