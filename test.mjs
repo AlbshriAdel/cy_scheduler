@@ -1003,6 +1003,105 @@ await seedAndCheck('C20 missing time skipped',
   // Only r1.b1↔r2.b1 fires R6.
   { R5: 0, R6: 1, R7: 0 });
 
+// ─────────────────────────────────────────────────────────
+// ONLINE SLOTS + CROSS-ROW R5 (same code, different row)
+// ─────────────────────────────────────────────────────────
+
+console.log('\n══ ONLINE SLOTS ══');
+
+// O1: Online type uses its own slot list (default contains 1700-1820 which
+// is NOT in the lecture list).
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('button:has-text("+ Add level")'); await settle();
+await page.fill('.level-name-input', 'L-O');
+await page.click('.level-section button:has-text("+ Add section")'); await settle();
+const oSec = page.locator('.section-card').first();
+await oSec.locator('.field:has-text("Type") select').selectOption('online');
+await settle();
+const onlineTimeOpts = await oSec.locator('.block').first()
+  .locator('.field:has-text("Time") select option').allTextContents();
+check('[O1] online type shows online slots',
+  onlineTimeOpts.some(o => o.includes('1700-1820')) &&
+  onlineTimeOpts.some(o => o.includes('2000-2120')),
+  onlineTimeOpts.join('|'));
+// And LAB-only slots like 0900-1040 should NOT appear in the online dropdown
+check('[O1b] lab-only slot not in online dropdown',
+  !onlineTimeOpts.some(o => o.trim() === '0900-1040'));
+
+// O2: Settings panel shows three slot tables: lecture, lab, online
+await page.click('.tab:has-text("Settings")'); await settle();
+const slotTables = await page.locator('#panel-settings .level-section').count();
+check('[O2] settings shows day-patterns + 3 slot tables (4 total)',
+  slotTables === 4, `count=${slotTables}`);
+
+// O3: Adding a new online slot reflects in the dropdown
+const onlineSec = page.locator('#panel-settings .level-section').nth(3);
+const onForm = onlineSec.locator('.add-form');
+await onForm.locator('input[type="time"]').nth(0).fill('06:00');
+await onForm.locator('input[type="time"]').nth(1).fill('07:00');
+await onForm.locator('button.btn-primary').click();
+await settle();
+await page.click('.tab:has-text("Schedule")'); await settle();
+const onTimeOpts2 = await page.locator('.section-card .block').first()
+  .locator('.field:has-text("Time") select option').allTextContents();
+check('[O3] new online slot appears in section dropdown',
+  onTimeOpts2.some(o => o.includes('0600-0700')),
+  onTimeOpts2.join('|'));
+
+console.log('\n══ R5 CROSS-ROW (same course code, different rows) ══');
+
+// X1: Two rows, same code (CECS-211), different types (lecture + online),
+//     same day, same time → R5 fires across rows.
+await seedAndCheck('[X1] cross-row R5 lecture + online same code',
+  [lv('L1')],
+  [
+    rowOf('r1', 'L_L1', 'CECS-211', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }]),
+    rowOf('r2', 'L_L1', 'CECS-211', 'online',  'M', [{ time: '0800-0920', instr: '', room: '' }]),
+  ],
+  { R5: 1, R6: 0, R7: 0 });
+
+// X2: Same code (CECS-211) lecture B1, B2, plus an online row at same time
+//     → all three pairs flag R5 (3 pairs).
+await seedAndCheck('[X2] B1 + B2 + Online same course same time',
+  [lv('L1')],
+  [
+    rowOf('r1', 'L_L1', 'CECS-211', 'lecture', 'M',
+      [{ time: '0800-0920', instr: '', room: '' },
+       { time: '0800-0920', instr: '', room: '' }]),
+    rowOf('r2', 'L_L1', 'CECS-211', 'online', 'M',
+      [{ time: '0800-0920', instr: '', room: '' }]),
+  ],
+  { R5: 3, R6: 0, R7: 0 });
+
+// X3: Different codes at same time → no R5 (preserved from earlier matrix)
+await seedAndCheck('[X3] different codes still no R5',
+  [lv('L1')],
+  [
+    rowOf('r1', 'L_L1', 'A-1', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }]),
+    rowOf('r2', 'L_L1', 'B-2', 'online',  'M', [{ time: '0800-0920', instr: '', room: '' }]),
+  ],
+  { R5: 0, R6: 0, R7: 0 });
+
+// X4: Same code, different rows, non-overlapping times → no conflict
+await seedAndCheck('[X4] same code different times no conflict',
+  [lv('L1')],
+  [
+    rowOf('r1', 'L_L1', 'CECS-211', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }]),
+    rowOf('r2', 'L_L1', 'CECS-211', 'online',  'M', [{ time: '0930-1050', instr: '', room: '' }]),
+  ],
+  { R5: 0, R6: 0, R7: 0 });
+
+// X5: Empty code falls back to row-only matching (no false positives)
+await seedAndCheck('[X5] empty code only same-row triggers R5',
+  [lv('L1')],
+  [
+    rowOf('r1', 'L_L1', '', 'lecture', 'M', [{ time: '0800-0920', instr: '', room: '' }]),
+    rowOf('r2', 'L_L1', '', 'online',  'M', [{ time: '0800-0920', instr: '', room: '' }]),
+  ],
+  { R5: 0, R6: 0, R7: 0 });
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');
