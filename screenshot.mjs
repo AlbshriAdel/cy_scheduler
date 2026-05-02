@@ -11,68 +11,72 @@ await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForSelector('#panel-schedule.active');
 
-// Build representative schedule with conflicts
-async function fillSection(sec, code, name, days, time, instr, room) {
-  await sec.locator('.field:has-text("Code") input').fill(code);
-  await sec.locator('.field:has-text("Name") input').fill(name);
-  await sec.locator('.field:has-text("Credits") input').fill('3');
-  await sec.locator('.field:has-text("Days") select').selectOption(days);
-  const b = sec.locator('.block').first();
-  await b.locator('.field:has-text("Time") select').selectOption(time);
-  await b.locator('.field:has-text("Instructor") select').selectOption(instr);
-  await b.locator('.field:has-text("Room") input').fill(room);
-}
-
-// Add instructors
+// Add a couple of instructors
 await page.click('.tab:has-text("Instructors")');
-for (const n of ['Dr. Alpha', 'Dr. Beta', 'Dr. Gamma']) {
+for (const n of ['Dr. Alpha', 'Dr. Beta', 'Dr. Gamma', 'Dr. Delta']) {
   await page.fill('.add-form input[type="text"]', n);
   await page.click('.add-form button:has-text("Add instructor")');
-  await page.waitForTimeout(80);
+  await page.waitForTimeout(60);
 }
 
+// BULK ADD demo
 await page.click('.tab:has-text("Schedule")');
 await page.click('button:has-text("+ Add level")');
 await page.fill('.level-name-input', 'Level 3');
+await page.click('.level-section button:has-text("Bulk add")');
+await page.waitForTimeout(150);
 
-// Section 1
-await page.click('.level-section button:has-text("+ Add section")');
-const s1 = page.locator('.section-card').first();
-await fillSection(s1, 'CECS-211', 'Programming Fundamentals', 'M,W', '0800-0920', 'Dr. Alpha', 'R-101');
-await page.click('.section-card button:has-text("+ Add block")');
-const s1b2 = page.locator('.section-card .block').nth(1);
-await s1b2.locator('.field:has-text("Time") select').selectOption('0930-1050');
-await s1b2.locator('.field:has-text("Instructor") select').selectOption('Dr. Beta');
-await s1b2.locator('.field:has-text("Room") input').fill('R-102');
+await page.fill('.modal textarea',
+  [
+    'CECS-211, Programming Fundamentals, lecture, 3, M,W',
+    'CECS-217, Computer Organisation, lecture, 3, M,W',
+    'SCMT-221, Discrete Math, lecture, 3, T,R',
+    'SCST-210, General Statistics, lecture, 3, U,M',
+    'CECY-211, Secure Programming, lab, 1, U',
+  ].join('\n'));
+await page.screenshot({ path: '/tmp/cy_v3_bulk_modal.png', fullPage: true });
 
-// Section 2 — same time, same instructor → R6 conflict, same level → R5
-await page.click('.level-section button:has-text("+ Add section")');
-const s2 = page.locator('.section-card').nth(1);
-await fillSection(s2, 'CECS-217', 'Computer Organisation', 'M,W', '0800-0920', 'Dr. Alpha', 'R-103');
+await page.click('.modal-foot button.btn-primary');
+await page.waitForTimeout(400);
+await page.screenshot({ path: '/tmp/cy_v3_after_bulk.png', fullPage: true });
 
-// Section 3 — same room as section 1 block 1 → R7
-await page.click('.level-section button:has-text("+ Add section")');
-const s3 = page.locator('.section-card').nth(2);
-await fillSection(s3, 'SCMT-221', 'Discrete Math', 'T,R', '1100-1220', 'Dr. Gamma', 'R-201');
-
+// AUTO-ALLOCATE demo
+await page.click('button:has-text("Auto-allocate")');
 await page.waitForTimeout(500);
+// Now assign instructors to demonstrate (auto-allocate only fills time)
+const sections = await page.$$('.section-card');
+for (let i = 0; i < sections.length; i++) {
+  const sel = page.locator('.section-card').nth(i)
+    .locator('.block').first().locator('.field:has-text("Instructor") select');
+  const instrs = ['Dr. Alpha', 'Dr. Beta', 'Dr. Gamma', 'Dr. Delta', 'Dr. Alpha'];
+  await sel.selectOption(instrs[i % instrs.length]);
+  await page.waitForTimeout(80);
+}
+await page.screenshot({ path: '/tmp/cy_v3_after_auto.png', fullPage: true });
 
-// Hover the conflict pill to reveal tooltip in screenshot via title attribute
-await page.screenshot({ path: '/tmp/cy_v2_schedule.png', fullPage: true });
+// Take a snapshot so print is enabled
+await page.click('.tab:has-text("Versions")'); await page.waitForTimeout(150);
+await page.fill('.snapshot-form input', 'Demo');
+await page.fill('.snapshot-form textarea', 'auto-allocated baseline');
+await page.click('.snapshot-form button:has-text("Save snapshot")');
+await page.waitForTimeout(200);
 
+// Switch to Grid for the print preview
 await page.click('.tab:has-text("Grid")');
 await page.waitForTimeout(300);
-await page.screenshot({ path: '/tmp/cy_v2_grid_all.png', fullPage: true });
+await page.screenshot({ path: '/tmp/cy_v3_grid_filled.png', fullPage: true });
 
-// Filter by instructor
-await page.selectOption('.grid-filters #fInstr', 'Dr. Alpha');
-await page.waitForTimeout(300);
-await page.screenshot({ path: '/tmp/cy_v2_grid_instr.png', fullPage: true });
-
-// Conflicts panel
-await page.click('.tab:has-text("Conflicts")');
+// Print emulation
+await page.emulateMedia({ media: 'print' });
 await page.waitForTimeout(200);
-await page.screenshot({ path: '/tmp/cy_v2_conflicts.png', fullPage: true });
+await page.screenshot({ path: '/tmp/cy_v3_print_grid.png', fullPage: true });
+await page.emulateMedia({ media: 'screen' });
+
+// Schedule print preview
+await page.click('.tab:has-text("Schedule")');
+await page.waitForTimeout(200);
+await page.emulateMedia({ media: 'print' });
+await page.screenshot({ path: '/tmp/cy_v3_print_schedule.png', fullPage: true });
 
 await browser.close();
-console.log('saved /tmp/cy_v2_*.png');
+console.log('saved /tmp/cy_v3_*.png');

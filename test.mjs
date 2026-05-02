@@ -514,6 +514,85 @@ const fInstrVal = await page.evaluate(() => document.getElementById('fInstr').va
 check('grid pre-filtered for Dr. T via view-week',
   fInstrVal === 'Dr. T', `got=${fInstrVal}`);
 
+console.log('\n══ 28. AUTO-ALLOCATE fills empty blocks without conflicts ══');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+// Add instructor
+await page.click('.tab:has-text("Instructors")');
+await page.fill('.add-form input[type="text"]', 'Dr. AA');
+await page.click('.add-form button:has-text("Add instructor")'); await settle();
+// Add level + 2 sections in same level with days set, no time
+await page.click('.tab:has-text("Schedule")'); await settle();
+await page.click('button:has-text("+ Add level")'); await settle();
+await page.fill('.level-name-input', 'L-AA');
+await page.click('.level-section button:has-text("+ Add section")'); await settle();
+await page.click('.level-section button:has-text("+ Add section")'); await settle();
+const sa1 = page.locator('.section-card').nth(0);
+const sa2 = page.locator('.section-card').nth(1);
+await sa1.locator('.field:has-text("Code") input').fill('AA-1');
+await sa1.locator('.field:has-text("Days") select').selectOption('M');
+await sa2.locator('.field:has-text("Code") input').fill('AA-2');
+await sa2.locator('.field:has-text("Days") select').selectOption('M');
+await settle();
+// Both sections, both blocks empty time → 2 sections × 1 block each = 2 empties
+await page.click('button:has-text("Auto-allocate")');
+await settle();
+const allocSt = await readState();
+const filled = allocSt.rows.flatMap(r => r.blocks).filter(b => b.time).length;
+check('auto-allocate filled empty blocks',
+  filled >= 2, `filled=${filled}`);
+// Verify no conflict was introduced
+const cBadge = await page.textContent('#conflictBadge');
+check('auto-allocate produced no conflicts',
+  parseInt(cBadge, 10) === 0, `badge=${cBadge}`);
+
+console.log('\n══ 29. BULK ADD parses TSV and CSV-with-multiday ══');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('button:has-text("+ Add level")'); await settle();
+await page.fill('.level-name-input', 'L-BA');
+await page.click('.level-section button:has-text("Bulk add")'); await settle();
+const bulk = [
+  'BA-1, Intro to BA, lecture, 3, M,W',          // CSV with comma-days
+  'BA-2\tAdvanced BA\tlab\t1\tT',                // TSV
+  'BA-3, Online BA, online, 2, U',
+].join('\n');
+await page.fill('.modal textarea', bulk);
+await page.click('.modal-foot button.btn-primary');
+await settle();
+const baSt = await readState();
+check('bulk add created 3 sections',
+  baSt.rows.length === 3, `n=${baSt.rows.length}`);
+const codes = baSt.rows.map(r => r.code).sort();
+check('bulk add codes parsed',
+  JSON.stringify(codes) === JSON.stringify(['BA-1','BA-2','BA-3']), JSON.stringify(codes));
+const csvRow = baSt.rows.find(r => r.code === 'BA-1');
+check('bulk add comma-days survived (M,W)',
+  csvRow && csvRow.days === 'M,W', csvRow && csvRow.days);
+check('bulk add types resolved',
+  baSt.rows.some(r => r.type === 'lab') && baSt.rows.some(r => r.type === 'online'));
+
+console.log('\n══ 30. PRINT MENU exists and is gated by dirty ══');
+check('print menu element exists',
+  await page.evaluate(() => !!document.getElementById('printMenu')));
+check('print button disabled while dirty (gate active)',
+  await page.evaluate(() => document.getElementById('btnPrint').disabled) === true);
+// Take a snapshot then verify menu opens after the gate clears
+await page.click('.tab:has-text("Versions")'); await settle();
+await page.fill('.snapshot-form input', 'tester');
+await page.click('.snapshot-form button:has-text("Save snapshot")');
+await settle();
+check('print button enabled after snapshot',
+  await page.evaluate(() => document.getElementById('btnPrint').disabled) === false);
+await page.click('#btnPrint');
+const opened = await page.evaluate(() =>
+  document.getElementById('printMenu').classList.contains('open'));
+check('print menu opens when not dirty', opened);
+const items = await page.locator('#printMenu .menu-item').count();
+check('print menu has 2 items (active + grid)', items === 2);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');

@@ -446,14 +446,46 @@
 
   /* PRINT */
   @media print {
-    body { background: white; }
+    @page { size: A4 landscape; margin: 12mm; }
+    body { background: white; color: black; }
     .toolbar, .tabs, .panel-actions, .section-actions, .level-actions, .block-actions,
-    .toast-stack, .modal-backdrop, .add-form, .menu, .snapshot-form { display: none !important; }
-    .panel { display: block !important; page-break-after: always; }
+    .toast-stack, .modal-backdrop, .add-form, .menu, .snapshot-form,
+    .grid-filters, .grid-legend, .dirty-banner, .view-week-btn { display: none !important; }
+    /* Only the active panel prints. */
+    .panel { display: none !important; page-break-after: always; }
+    .panel.active { display: block !important; }
     .panel-wrap { padding: 0; }
-    .level-section, .rule-card, .issues-list, .table-wrap { box-shadow: none; border-color: #ccc; page-break-inside: avoid; }
-    .section-card { background: white; }
-    .field-select, .field-input { border: none; background: transparent; padding: 0; }
+    .panel-header { margin-bottom: 8px; }
+    .panel-title { font-size: 18px; }
+    .panel-sub { display: none; }
+    .level-section, .rule-card, .issues-list, .table-wrap, .grid-table {
+      box-shadow: none; border-color: #999; page-break-inside: avoid;
+    }
+    .level-section { padding: 10px; margin-bottom: 8px; }
+    .level-head { margin-bottom: 8px; padding-bottom: 6px; }
+    .section-card { background: white; padding: 8px; margin-bottom: 6px; }
+    .row-grid { gap: 4px; }
+    .field-label { font-size: 9px; }
+    .field-select, .field-input, .level-name-input {
+      border: none; background: transparent; padding: 0; font-size: 11px;
+      -webkit-appearance: none; appearance: none;
+    }
+    .pill { border: 1px solid currentColor; }
+    .blocks-list { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .block { padding: 6px; }
+
+    /* Grid panel print: compact, fits A4 landscape */
+    .grid-row {
+      grid-template-columns: 70px repeat(5, 1fr);
+      page-break-inside: avoid;
+    }
+    .grid-cell { min-height: 36px; padding: 4px 6px; font-size: 10px; }
+    .grid-cell.head { font-size: 9px; padding: 3px 4px; }
+    .grid-cell.time { font-size: 9px; padding: 3px 4px; }
+    .grid-session-code { font-size: 10px; }
+    .grid-session-sub { font-size: 9px; }
+    .grid-cell.busy { background: #EEF2F8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .grid-cell.conflict { background: #F4D6CD !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 
   .stack { display: flex; flex-direction: column; gap: 12px; }
@@ -625,7 +657,13 @@
         <button class="menu-item" data-export="template">Download template</button>
       </div>
     </div>
-    <button class="btn" id="btnPrint" data-i18n="print">Print</button>
+    <div class="menu-wrap">
+      <button class="btn" id="btnPrint" data-i18n="print">Print ▾</button>
+      <div class="menu" id="printMenu" role="menu">
+        <button class="menu-item" data-print="active" data-i18n="print">Print</button>
+        <button class="menu-item" data-print="grid" data-i18n="print_grid">Print grid</button>
+      </div>
+    </div>
     <button class="btn" id="btnLang" title="Toggle language">EN / ع</button>
   </div>
 </header>
@@ -779,6 +817,14 @@ const I18N = {
     add_level: '+ Add level',
     add_section: '+ Add section',
     add_block: '+ Add block',
+    auto_allocate: 'Auto-allocate',
+    auto_allocate_done: 'Allocated {filled}, skipped {skipped}',
+    auto_allocate_none: 'Nothing to allocate.',
+    bulk_add: 'Bulk add',
+    bulk_add_title: 'Bulk add sections',
+    bulk_add_help: 'One section per line. Tab- or comma-separated: code, name, type, credits, days. Type = lecture / lab / online.',
+    bulk_add_added: 'Added {n} section(s)',
+    print_grid: 'Print grid',
     empty_schedule_title: 'No levels yet',
     empty_schedule_sub: 'Start by adding an academic level.',
     empty_level_sub: 'No sections in this level yet.',
@@ -857,6 +903,14 @@ const I18N = {
     add_level: '+ إضافة مستوى',
     add_section: '+ إضافة شعبة',
     add_block: '+ إضافة بلوك',
+    auto_allocate: 'تخصيص تلقائي',
+    auto_allocate_done: 'تم تخصيص {filled}، تم تجاوز {skipped}',
+    auto_allocate_none: 'لا يوجد ما يخصص.',
+    bulk_add: 'إضافة دفعة',
+    bulk_add_title: 'إضافة شعب دفعة واحدة',
+    bulk_add_help: 'سطر لكل شعبة. مفصول بفاصلة أو tab: الرمز، الاسم، النوع، الساعات، الأيام. النوع = lecture / lab / online.',
+    bulk_add_added: 'تم إضافة {n} شعبة',
+    print_grid: 'طباعة الشبكة',
     empty_schedule_title: 'لا توجد مستويات بعد',
     empty_schedule_sub: 'ابدأ بإضافة مستوى أكاديمي.',
     empty_level_sub: 'لا توجد شعب في هذا المستوى بعد.',
@@ -1348,8 +1402,11 @@ function renderSchedule() {
     title: t('schedule_title'),
     sub: t('schedule_sub'),
     actions: [
+      State.rows.length > 0
+        ? el('button', { class: 'btn', onclick: runAutoAllocate }, t('auto_allocate'))
+        : null,
       el('button', { class: 'btn btn-primary', onclick: addLevel }, t('add_level')),
-    ],
+    ].filter(Boolean),
   }));
 
   if (State.levels.length === 0) {
@@ -1396,6 +1453,10 @@ function renderLevel(level, conflictBlocks) {
         class: 'btn btn-sm',
         onclick: () => addSection(level.id),
       }, t('add_section')),
+      el('button', {
+        class: 'btn btn-sm',
+        onclick: () => openBulkAdd(level.id),
+      }, t('bulk_add')),
       el('button', {
         class: 'btn btn-sm btn-ghost',
         title: t('delete'),
@@ -1746,6 +1807,92 @@ function removeBlock(sectionId, blockId) {
   });
   renderSchedule();
   updateConflictBadge();
+}
+
+// ====================================================================
+// AUTO-ALLOCATE — greedy fill of empty block times
+// ====================================================================
+
+function runAutoAllocate() {
+  let filled = 0, skipped = 0;
+  mutate(() => {
+    State.rows.forEach(r => {
+      if (!r.days) { r.blocks.forEach(b => { if (!b.time) skipped++; }); return; }
+      r.blocks.forEach(b => {
+        if (b.time) return;
+        const slots = slotsFor(r.type);
+        let placed = false;
+        for (const slot of slots) {
+          b.time = slot.code;
+          const { byBlock } = detectConflicts();
+          if (!byBlock.has(r.id + '|' + b.id)) {
+            placed = true;
+            break;
+          }
+          b.time = '';
+        }
+        if (placed) filled++; else skipped++;
+      });
+    });
+  });
+  renderSchedule();
+  updateConflictBadge();
+  if (filled === 0 && skipped === 0) {
+    toast(t('auto_allocate_none'), 'warn');
+  } else {
+    const msg = t('auto_allocate_done').replace('{filled}', filled).replace('{skipped}', skipped);
+    toast(msg, filled > 0 ? 'ok' : 'warn');
+  }
+}
+
+// ====================================================================
+// BULK ADD — paste many sections into a level
+// ====================================================================
+
+function openBulkAdd(levelId) {
+  const lv = State.levels.find(l => l.id === levelId);
+  if (!lv) return;
+  const ta = el('textarea', {
+    placeholder: 'CECS-211, Programming Fundamentals, lecture, 3, M,W',
+    style: 'width:100%; min-height:160px; font-family:Geist Mono, monospace; font-size:12px; padding:8px; border:1px solid var(--rule); border-radius:6px;',
+  });
+  const help = el('div', {
+    style: 'font-size:12px; color:var(--ink-faint); margin-bottom:10px;',
+  }, t('bulk_add_help'));
+  modal({
+    title: `${t('bulk_add_title')} · ${lv.name || '—'}`,
+    body: el('div', {}, help, ta),
+    confirmLabel: t('bulk_add'),
+    onConfirm: () => {
+      const lines = (ta.value || '').split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length === 0) return false;
+      const added = [];
+      lines.forEach(line => {
+        // Split on tabs first; if none, split on commas (taking the first 5 fields,
+        // and assume any extra commas belong to the days field).
+        let parts;
+        if (line.includes('\t')) parts = line.split('\t').map(s => s.trim());
+        else {
+          // Comma split: code, name, type, credits, days(may contain commas)
+          const m = line.split(',').map(s => s.trim());
+          if (m.length <= 5) parts = m;
+          else parts = [m[0], m[1], m[2], m[3], m.slice(4).join(',')];
+        }
+        const [code, name, type, credits, days] = parts;
+        const sec = newSection(levelId);
+        sec.code = code || '';
+        sec.name = name || '';
+        sec.type = ['lecture','lab','online'].includes((type||'').toLowerCase()) ? type.toLowerCase() : 'lecture';
+        sec.credits = parseInt(credits, 10) || 0;
+        sec.days = days || '';
+        added.push(sec);
+      });
+      mutate(() => { added.forEach(s => State.rows.push(s)); });
+      renderSchedule();
+      updateConflictBadge();
+      toast(t('bulk_add_added').replace('{n}', added.length), 'ok');
+    },
+  });
 }
 
 // ====================================================================
@@ -2545,9 +2692,23 @@ function init() {
 
   document.getElementById('btnLang').addEventListener('click',
     () => setLang(State.lang === 'en' ? 'ar' : 'en'));
-  document.getElementById('btnPrint').addEventListener('click', () => {
+  const printMenu = document.getElementById('printMenu');
+  document.getElementById('btnPrint').addEventListener('click', (e) => {
     if (isDirty()) { toast(t('blocked_print'), 'warn'); return; }
-    window.print();
+    e.stopPropagation();
+    printMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => printMenu.classList.remove('open'));
+  printMenu.querySelectorAll('[data-print]').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isDirty()) { toast(t('blocked_print'), 'warn'); printMenu.classList.remove('open'); return; }
+      const mode = b.getAttribute('data-print');
+      printMenu.classList.remove('open');
+      if (mode === 'grid') setTab('grid');
+      // Defer to next tick so the panel switch settles before print dialog
+      setTimeout(() => window.print(), 50);
+    });
   });
   document.getElementById('dirtyGoSnap').addEventListener('click', () => setTab('versions'));
   document.getElementById('btnUndo').addEventListener('click', () => {
