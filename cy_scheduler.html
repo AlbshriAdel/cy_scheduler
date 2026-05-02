@@ -3077,61 +3077,67 @@ function buildWorkbook(sheets) {
   return makeZip(files);
 }
 
-// Build the full department timetable as one workbook:
-//   - Summary sheet (one row per block, all levels)
-//   - One sheet per level (matches the printable schedule)
-//   - Grid sheet (day × time)
+// Build the full department timetable in the layout of
+// Course_Schedule_Template.xlsx (the bilingual reference template
+// supplied by the user). Layout:
+//   Row 1: title
+//   Row 3: BLOCK 1 / BLOCK 2 super-headers
+//   Row 4: column headers (bilingual EN \n AR)
+//   Row 5+: one row per section (Block 1 cols G-I, Block 2 cols J-L)
+// Plus an extra Grid sheet for the weekly view.
 function exportXlsx() {
-  const summary = [['Level','Code','Name','Type','Credits','Days','Block','Time','Instructor','Room']];
+  const title = 'Course Schedule — جدول المقررات الدراسية';
+  const supBlock1 = 'BLOCK 1 — البلوك الأول';
+  const supBlock2 = 'BLOCK 2 — البلوك الثاني';
+  const H = (en, ar) => `${en}\n${ar}`;
+
+  // Schedule sheet (single 12-column layout)
+  const sheet1 = [
+    [title],            // row 1
+    [],                 // row 2 (blank)
+    ['','','','','','', supBlock1, '', '', supBlock2, '', ''], // row 3
+    [
+      H('Level','المستوى'), H('Code','الرمز'), H('Course Name','اسم المقرر'),
+      H('Type','النوع'), H('Cr','س'), H('Days','الأيام'),
+      H('Time','الوقت'), H('Instructor','المدرس'), H('Room','القاعة'),
+      H('Time','الوقت'), H('Instructor','المدرس'), H('Room','القاعة'),
+    ],
+  ];
+  let truncated = 0;
   State.rows.forEach(r => {
     const lv = State.levels.find(l => l.id === r.levelId);
-    r.blocks.forEach((b, i) => {
-      summary.push([
-        lv ? lv.name : '', r.code || '', r.name || '', r.type, r.credits || 0,
-        r.days || '', `B${i+1}`, b.time || '', b.instr || '', b.room || '',
-      ]);
-    });
+    const typeLabel = (TYPES.find(t => t.code === r.type) || {}).en || r.type;
+    const b1 = r.blocks[0] || { time:'', instr:'', room:'' };
+    const b2 = r.blocks[1] || { time:'', instr:'', room:'' };
+    if (r.blocks.length > 2) truncated++;
+    sheet1.push([
+      lv ? lv.name : '', r.code || '', r.name || '',
+      typeLabel, r.credits || 0, r.days || '',
+      b1.time || '', b1.instr || '', b1.room || '',
+      b2.time || '', b2.instr || '', b2.room || '',
+    ]);
   });
 
-  const sheets = [{ name: 'Summary', rows: summary }];
-
-  // Per-level sheets
-  State.levels.forEach(lv => {
-    const rows = State.rows.filter(r => r.levelId === lv.id);
-    if (rows.length === 0) return;
-    const maxBlocks = Math.max(2, ...rows.map(r => r.blocks.length));
-    const header = ['Code','Name','Type','Credits','Days'];
-    for (let i = 1; i <= maxBlocks; i++) {
-      header.push(`B${i} time`, `B${i} instr`, `B${i} room`);
-    }
-    const sheetRows = [header];
-    rows.forEach(r => {
-      const cells = [r.code || '', r.name || '', r.type, r.credits || 0, r.days || ''];
-      for (let i = 0; i < maxBlocks; i++) {
-        const b = r.blocks[i] || { time: '', instr: '', room: '' };
-        cells.push(b.time, b.instr, b.room);
-      }
-      sheetRows.push(cells);
-    });
-    sheets.push({ name: lv.name || `Level ${sheets.length}`, rows: sheetRows });
-  });
-
-  // Grid sheet
+  // Grid sheet (day × time)
   const slotsAll = allSlotsSorted();
   const gridRows = [['', 'Sun (U)', 'Mon (M)', 'Tue (T)', 'Wed (W)', 'Thu (R)']];
   const sessions = buildSessions();
   slotsAll.forEach(slot => {
     const row = [`${slot.code} ${slot.kind}`];
     ['U','M','T','W','R'].forEach(day => {
-      const cell = sessions.filter(s => s.day === day && s.slotCode === slot.code)
-        .map(s => `${s.code} B${s.blockIdx+1}${s.instr ? ' / ' + s.instr : ''}${s.room ? ' / ' + s.room : ''}`)
+      const cell = sessions
+        .filter(s => s.day === day && s.slotCode === slot.code)
+        .map(s => `${s.code} B${s.blockIdx + 1}${s.instr ? ' / ' + s.instr : ''}${s.room ? ' / ' + s.room : ''}`)
         .join(' | ');
       row.push(cell);
     });
     gridRows.push(row);
   });
-  sheets.push({ name: 'Grid', rows: gridRows });
 
+  const sheets = [
+    { name: 'Course Schedule', rows: sheet1 },
+    { name: 'Grid', rows: gridRows },
+  ];
   const bytes = buildWorkbook(sheets);
   const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
@@ -3140,6 +3146,7 @@ function exportXlsx() {
   a.download = 'Course_Schedule_Template.xlsx';
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  if (truncated) toast(`${truncated} section(s) had >2 blocks — extras dropped to fit template`, 'warn');
 }
 
 function exportAs(fmt) {
