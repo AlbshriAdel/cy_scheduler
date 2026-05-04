@@ -1102,6 +1102,76 @@ await seedAndCheck('[X5] empty code only same-row triggers R5',
   ],
   { R5: 0, R6: 0, R7: 0 });
 
+console.log('\n══ DISMISS / RESTORE conflict flags ══');
+
+// Seed an R6 conflict
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.evaluate(() => {
+  const sec = (id, code, instr) => ({
+    id, levelId: 'L_L1', code, name: code, type: 'lecture',
+    credits: 3, days: 'M',
+    blocks: [{ id: id + '_b1', time: '0800-0920', instr, room: '' }],
+  });
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L_L1', name: 'L1' }],
+    rows: [sec('r1', 'A', 'Dr. K'), sec('r2', 'B', 'Dr. K')],
+    instructors: [{ name: 'Dr. K', minLoad: 12 }],
+    lang: 'en',
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('.tab:has-text("Conflicts")');
+await settle();
+const initialBadge = parseInt(await page.textContent('#conflictBadge'), 10);
+check('[D1] conflict present before dismissal',
+  initialBadge >= 1, `badge=${initialBadge}`);
+
+// Dismiss the conflict
+await page.click('.issue button.btn-ghost:has-text("Dismiss")');
+await settle();
+const afterDismiss = await page.textContent('#conflictBadge');
+check('[D2] badge drops to 0 after dismissal',
+  parseInt(afterDismiss, 10) === 0, `badge=${afterDismiss}`);
+const dismissedHeader = await page.locator('h3:has-text("Dismissed")').count();
+check('[D3] Dismissed heading appears',
+  dismissedHeader >= 1);
+
+// Schedule view should no longer mark blocks as conflict
+await page.click('.tab:has-text("Schedule")'); await settle();
+const conflictPills = await page.locator('.section-card .pill.pill-bad').count();
+check('[D4] Schedule no longer shows CONFLICT pill after dismissal',
+  conflictPills === 0, `count=${conflictPills}`);
+
+// Persist across reload
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('.tab:has-text("Conflicts")'); await settle();
+const persistBadge = parseInt(await page.textContent('#conflictBadge'), 10);
+check('[D5] dismissal persists across reload',
+  persistBadge === 0, `badge=${persistBadge}`);
+
+// Restore
+await page.click('.issue button.btn-sm:has-text("Restore")');
+await settle();
+const restoreBadge = parseInt(await page.textContent('#conflictBadge'), 10);
+check('[D6] restore brings the conflict back',
+  restoreBadge >= 1, `badge=${restoreBadge}`);
+
+// Dismiss-all path
+await page.click('button:has-text("Dismiss all")');
+await page.waitForTimeout(800);
+check('[D7] Dismiss all clears the badge',
+  parseInt(await page.textContent('#conflictBadge'), 10) === 0);
+
+// Clear-all-dismissals path
+await page.click('button:has-text("Clear all dismissals")');
+await settle();
+check('[D8] Clear dismissals re-flags conflicts',
+  parseInt(await page.textContent('#conflictBadge'), 10) >= 1);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');
