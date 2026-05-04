@@ -5,44 +5,42 @@ const { chromium } = pw;
 
 const FILE = pathToFileURL(path.resolve('cy_scheduler.html')).href;
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
+const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
 await page.goto(FILE);
-await page.evaluate(() => localStorage.clear());
+await page.evaluate(() => {
+  localStorage.clear();
+  // Seed state with 3 conflicts
+  const sec = (id, code, instr, room, time = '0800-0920') => ({
+    id, levelId: 'L1', code, name: code, type: 'lecture',
+    credits: 3, days: 'M',
+    blocks: [{ id: id + '_b1', time, instr, room }],
+  });
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'Level 3' }],
+    rows: [
+      sec('r1', 'CECS-211', 'Dr. Alpha', 'R-101'),
+      sec('r2', 'CECS-217', 'Dr. Alpha', 'R-101'),  // R6 + R7
+      sec('r3', 'CECS-211', 'Dr. Beta',  'R-103'),  // R5 with r1 (same code)
+    ],
+    instructors: [
+      { name: 'Dr. Alpha', minLoad: 12 },
+      { name: 'Dr. Beta',  minLoad: 12 },
+    ],
+    lang: 'en',
+    dismissedConflicts: [],
+  }));
+});
 await page.reload();
 await page.waitForSelector('#panel-schedule.active');
-
-// Add a couple instructors
-await page.click('.tab:has-text("Instructors")');
-for (const n of ['Dr. Alpha', 'Dr. Beta']) {
-  await page.fill('.add-form input[type="text"]', n);
-  await page.click('.add-form button:has-text("Add instructor")');
-  await page.waitForTimeout(60);
-}
-// Schedule
-await page.click('.tab:has-text("Schedule")');
-await page.click('button:has-text("+ Add level")');
-await page.fill('.level-name-input', 'Level 3');
-await page.click('.level-section button:has-text("Bulk add")');
-await page.waitForTimeout(150);
-await page.fill('.modal textarea',
-  ['CECS-217, تنظيم وبنيان الحاسب, lecture, 3, M,W',
-   'SCMT-221, جبر خطي, lecture, 3, M,W'].join('\n'));
-await page.click('.modal-foot button.btn-primary');
+await page.click('.tab:has-text("Conflicts")');
 await page.waitForTimeout(300);
+await page.screenshot({ path: '/tmp/cy_v7_conflicts_active.png', fullPage: true });
 
-// Configure CECS-217 with two blocks
-const s1 = page.locator('.section-card').nth(0);
-await s1.locator('.block').first().locator('.field:has-text("Time") select').selectOption('0930-1050');
-await page.click('.section-card button:has-text("+ Add block")');
-await page.waitForTimeout(200);
-await page.locator('.section-card').nth(0).locator('.block').nth(1)
-  .locator('.field:has-text("Time") select').selectOption('1100-1220');
-// SCMT-221 single block at 1100-1220 — same level, same time → still no conflict
-const s2 = page.locator('.section-card').nth(1);
-await s2.locator('.block').first().locator('.field:has-text("Time") select').selectOption('1100-1220');
-
-await page.waitForTimeout(400);
-await page.screenshot({ path: '/tmp/cy_v6_schedule.png', fullPage: true });
+// Dismiss the R7 conflict
+const r7issue = page.locator('.issue:has-text("R7")').first();
+await r7issue.locator('button:has-text("Dismiss")').click();
+await page.waitForTimeout(300);
+await page.screenshot({ path: '/tmp/cy_v7_conflicts_after_dismiss.png', fullPage: true });
 
 await browser.close();
-console.log('saved /tmp/cy_v6_schedule.png');
+console.log('saved /tmp/cy_v7_*.png');

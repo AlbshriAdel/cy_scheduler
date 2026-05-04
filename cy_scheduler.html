@@ -904,6 +904,13 @@ const I18N = {
     rules_heading: 'Rules',
     issues_heading: 'Live issues',
     no_conflicts: 'No conflicts detected.',
+    dismiss: 'Dismiss',
+    dismiss_tooltip: 'Mark this conflict as intentional / accepted',
+    dismiss_all: 'Dismiss all',
+    dismissed_heading: 'Dismissed',
+    restore_flag: 'Restore',
+    restore_tooltip: 'Re-flag this conflict',
+    clear_dismissals: 'Clear all dismissals',
     versions_title: 'Versions',
     versions_sub: 'Snapshot the schedule at any point and restore later.',
     snap_create: 'Create snapshot',
@@ -1007,6 +1014,13 @@ const I18N = {
     rules_heading: 'القواعد',
     issues_heading: 'مشاكل حالية',
     no_conflicts: 'لا توجد تعارضات.',
+    dismiss: 'تجاهل',
+    dismiss_tooltip: 'حدّد هذا التعارض كمقصود / مقبول',
+    dismiss_all: 'تجاهل الكل',
+    dismissed_heading: 'متجاهَل',
+    restore_flag: 'استعادة',
+    restore_tooltip: 'إعادة وضع علامة التعارض',
+    clear_dismissals: 'مسح كل المتجاهَلة',
     versions_title: 'الإصدارات',
     versions_sub: 'احفظ نسخة من الجدول في أي وقت واسترجعها لاحقاً.',
     snap_create: 'إنشاء نسخة',
@@ -1055,6 +1069,9 @@ const State = {
   history: [],
   future: [],
   gridFilters: { instr: '', level: '', room: '', type: '' },
+  // Conflict signatures the user has explicitly dismissed (intentional
+  // overlaps). Stored as an array (not a Set) so JSON.stringify works.
+  dismissedConflicts: [],
   config: {
     dayPatterns: DEFAULT_DAY_PATTERNS.map(p => ({ ...p })),
     lectureSlots: DEFAULT_LECTURE_SLOTS.map(s => ({ ...s })),
@@ -1105,6 +1122,7 @@ const Storage = {
         instructors: State.instructors,
         lang: State.lang,
         config: State.config,
+        dismissedConflicts: State.dismissedConflicts,
       };
       localStorage.setItem(STORAGE_STATE, JSON.stringify(data));
     } catch (e) { console.warn('save failed', e); }
@@ -1296,21 +1314,23 @@ function buildSessions() {
   return out;
 }
 
-// Cache of the most recent conflict computation, populated by detectConflicts().
-// Render code reads from this so functions don't need to thread it through.
-let _lastConflicts = { issues: [], byBlock: new Set(), reasonsByBlock: new Map() };
+// Cache of the most recent conflict computation. Render code reads from
+// this so functions don't need to thread it through.
+let _lastConflicts = {
+  issues: [], dismissedIssues: [],
+  byBlock: new Set(), reasonsByBlock: new Map(),
+};
+
+// Order-independent canonical signature for a conflict pair, used to look
+// up dismissals across runs even if a/b swap order.
+function conflictSig(iss) {
+  const parts = [iss.a, iss.b].sort();
+  return `${iss.rule}|${iss.day}|${parts[0]}|${parts[1]}`;
+}
 
 function detectConflicts() {
   const sessions = buildSessions();
-  const issues = [];
-  const byBlock = new Set(); // "rowId|blockId"
-  const reasonsByBlock = new Map(); // "rowId|blockId" -> [string,...]
-  const addReason = (key, reason) => {
-    if (!reasonsByBlock.has(key)) reasonsByBlock.set(key, []);
-    const list = reasonsByBlock.get(key);
-    if (!list.includes(reason)) list.push(reason);
-  };
-  const lvName = (id) => (State.levels.find(l => l.id === id) || {}).name || '—';
+  const allIssues = [];
   const sessionLabel = (s) => `${s.code || '?'} B${s.blockIdx + 1} (${s.slotCode})`;
 
   for (let i = 0; i < sessions.length; i++) {
@@ -1330,32 +1350,100 @@ function detectConflicts() {
       if (sameCourse) {
         const aKindA = a.rowId === b.rowId ? `Block ${a.blockIdx + 1}` : `${a.type} B${a.blockIdx + 1}`;
         const aKindB = a.rowId === b.rowId ? `Block ${b.blockIdx + 1}` : `${b.type} B${b.blockIdx + 1}`;
-        const reason = `Course "${a.code || a.name}" has ${aKindA} and ${aKindB} at the same time.`;
-        issues.push({ rule: 'R5', day: a.day, reason, a: aKey, b: bKey });
-        byBlock.add(aKey); byBlock.add(bKey);
-        addReason(aKey, `R5 ${a.day}: same course, also has ${aKindB} at this time`);
-        addReason(bKey, `R5 ${a.day}: same course, also has ${aKindA} at this time`);
+        allIssues.push({
+          rule: 'R5', day: a.day, a: aKey, b: bKey,
+          reason: `Course "${a.code || a.name}" has ${aKindA} and ${aKindB} at the same time.`,
+          tipA: `R5 ${a.day}: same course, also has ${aKindB} at this time`,
+          tipB: `R5 ${a.day}: same course, also has ${aKindA} at this time`,
+        });
       }
-      // R6: instructor double-book — only flagged when both blocks are non-online
-      // (lecture or lab). Instructor on an online block doesn't lock physical time.
+      // R6: instructor double-book — only flagged when both blocks are non-online.
       if (a.instr && a.instr === b.instr && a.type !== 'online' && b.type !== 'online') {
-        const reason = `Instructor "${a.instr}" is double-booked.`;
-        issues.push({ rule: 'R6', day: a.day, reason, a: aKey, b: bKey });
-        byBlock.add(aKey); byBlock.add(bKey);
-        addReason(aKey, `R6 ${a.day}: ${a.instr} also teaches ${sessionLabel(b)}`);
-        addReason(bKey, `R6 ${a.day}: ${a.instr} also teaches ${sessionLabel(a)}`);
+        allIssues.push({
+          rule: 'R6', day: a.day, a: aKey, b: bKey,
+          reason: `Instructor "${a.instr}" is double-booked.`,
+          tipA: `R6 ${a.day}: ${a.instr} also teaches ${sessionLabel(b)}`,
+          tipB: `R6 ${a.day}: ${a.instr} also teaches ${sessionLabel(a)}`,
+        });
       }
+      // R7: room double-book — non-online only.
       if (a.room && a.room === b.room && a.type !== 'online' && b.type !== 'online') {
-        const reason = `Room "${a.room}" is double-booked.`;
-        issues.push({ rule: 'R7', day: a.day, reason, a: aKey, b: bKey });
-        byBlock.add(aKey); byBlock.add(bKey);
-        addReason(aKey, `R7 ${a.day}: room ${a.room} also used by ${sessionLabel(b)}`);
-        addReason(bKey, `R7 ${a.day}: room ${a.room} also used by ${sessionLabel(a)}`);
+        allIssues.push({
+          rule: 'R7', day: a.day, a: aKey, b: bKey,
+          reason: `Room "${a.room}" is double-booked.`,
+          tipA: `R7 ${a.day}: room ${a.room} also used by ${sessionLabel(b)}`,
+          tipB: `R7 ${a.day}: room ${a.room} also used by ${sessionLabel(a)}`,
+        });
       }
     }
   }
-  _lastConflicts = { issues, byBlock, reasonsByBlock };
+
+  // Partition into active / dismissed. Dismissed conflicts don't propagate
+  // to byBlock / reasonsByBlock so the Schedule and Grid won't show them
+  // as red.
+  const dismissed = new Set(State.dismissedConflicts);
+  const issues = [];
+  const dismissedIssues = [];
+  const byBlock = new Set();
+  const reasonsByBlock = new Map();
+  const addReason = (key, reason) => {
+    if (!reasonsByBlock.has(key)) reasonsByBlock.set(key, []);
+    const list = reasonsByBlock.get(key);
+    if (!list.includes(reason)) list.push(reason);
+  };
+  allIssues.forEach(iss => {
+    iss.sig = conflictSig(iss);
+    if (dismissed.has(iss.sig)) {
+      dismissedIssues.push(iss);
+    } else {
+      issues.push(iss);
+      byBlock.add(iss.a); byBlock.add(iss.b);
+      addReason(iss.a, iss.tipA);
+      addReason(iss.b, iss.tipB);
+    }
+  });
+
+  _lastConflicts = { issues, dismissedIssues, byBlock, reasonsByBlock };
   return _lastConflicts;
+}
+
+function dismissConflict(sig) {
+  if (!State.dismissedConflicts.includes(sig)) {
+    mutate(() => { State.dismissedConflicts.push(sig); });
+    renderConflicts();
+    refreshAfterEdit();
+  }
+}
+
+function restoreConflict(sig) {
+  const i = State.dismissedConflicts.indexOf(sig);
+  if (i >= 0) {
+    mutate(() => { State.dismissedConflicts.splice(i, 1); });
+    renderConflicts();
+    refreshAfterEdit();
+  }
+}
+
+function dismissAllConflicts() {
+  // Always recompute — the cached _lastConflicts could be stale if a
+  // re-render happened between the last detectConflicts call and the click.
+  const fresh = detectConflicts();
+  const all = fresh.issues.map(conflictSig);
+  if (all.length === 0) return;
+  mutate(() => {
+    all.forEach(sig => {
+      if (!State.dismissedConflicts.includes(sig)) State.dismissedConflicts.push(sig);
+    });
+  });
+  renderConflicts();
+  refreshAfterEdit();
+}
+
+function clearDismissals() {
+  if (State.dismissedConflicts.length === 0) return;
+  mutate(() => { State.dismissedConflicts = []; });
+  renderConflicts();
+  refreshAfterEdit();
 }
 
 function blockStatus(row, block, conflictBlocks) {
@@ -2224,34 +2312,76 @@ function renderConflicts() {
   });
   panel.appendChild(rulesGrid);
 
-  const { issues } = detectConflicts();
-  panel.appendChild(el('h3', {
-    style: 'font-family:Fraunces,serif; font-size:14px; font-weight:600; margin:24px 0 10px; color:var(--ink-soft);',
-  }, `${t('issues_heading')} (${issues.length})`));
+  const { issues, dismissedIssues } = detectConflicts();
+
+  // Section: active issues
+  const issuesHeader = el('div', {
+    style: 'display:flex; align-items:center; justify-content:space-between; margin:24px 0 10px; gap:12px;',
+  },
+    el('h3', {
+      style: 'font-family:Fraunces,serif; font-size:14px; font-weight:600; color:var(--ink-soft);',
+    }, `${t('issues_heading')} (${issues.length})`),
+    issues.length > 0
+      ? el('button', { class: 'btn btn-sm', onclick: dismissAllConflicts }, t('dismiss_all'))
+      : null,
+  );
+  panel.appendChild(issuesHeader);
 
   if (issues.length === 0) {
     panel.appendChild(el('div', { class: 'empty' },
       el('div', { class: 'empty-title' }, t('no_conflicts')),
     ));
-    setConflictBadge(0);
-    return;
+  } else {
+    const list = el('div', { class: 'issues-list' });
+    issues.slice(0, 100).forEach(iss => {
+      const sugg = suggestFix(iss);
+      list.appendChild(el('div', { class: 'issue' },
+        el('span', { class: 'pill pill-bad' }, iss.rule),
+        el('span', { class: 'issue-meta' }, `Day ${iss.day}`),
+        el('span', { class: 'issue-text' }, iss.reason),
+        sugg ? el('button', {
+          class: 'btn btn-sm',
+          title: sugg.label,
+          onclick: () => sugg.apply(),
+        }, `${t('apply')}: ${sugg.label}`) : null,
+        el('button', {
+          class: 'btn btn-sm btn-ghost',
+          title: t('dismiss_tooltip'),
+          onclick: () => dismissConflict(iss.sig),
+        }, t('dismiss')),
+      ));
+    });
+    panel.appendChild(list);
   }
 
-  const list = el('div', { class: 'issues-list' });
-  issues.slice(0, 100).forEach(iss => {
-    const sugg = suggestFix(iss);
-    list.appendChild(el('div', { class: 'issue' },
-      el('span', { class: 'pill pill-bad' }, iss.rule),
-      el('span', { class: 'issue-meta' }, `Day ${iss.day}`),
-      el('span', { class: 'issue-text' }, iss.reason),
-      sugg ? el('button', {
-        class: 'btn btn-sm',
-        title: sugg.label,
-        onclick: () => sugg.apply(),
-      }, `${t('apply')}: ${sugg.label}`) : null,
-    ));
-  });
-  panel.appendChild(list);
+  // Section: dismissed issues (collapsible)
+  if (dismissedIssues.length > 0) {
+    const dHeader = el('div', {
+      style: 'display:flex; align-items:center; justify-content:space-between; margin:24px 0 10px; gap:12px;',
+    },
+      el('h3', {
+        style: 'font-family:Fraunces,serif; font-size:14px; font-weight:600; color:var(--ink-faint);',
+      }, `${t('dismissed_heading')} (${dismissedIssues.length})`),
+      el('button', { class: 'btn btn-sm', onclick: clearDismissals }, t('clear_dismissals')),
+    );
+    panel.appendChild(dHeader);
+
+    const dList = el('div', { class: 'issues-list', style: 'opacity:.7;' });
+    dismissedIssues.forEach(iss => {
+      dList.appendChild(el('div', { class: 'issue' },
+        el('span', { class: 'pill pill-mute' }, iss.rule),
+        el('span', { class: 'issue-meta' }, `Day ${iss.day}`),
+        el('span', { class: 'issue-text', style: 'text-decoration: line-through;' }, iss.reason),
+        el('button', {
+          class: 'btn btn-sm',
+          title: t('restore_tooltip'),
+          onclick: () => restoreConflict(iss.sig),
+        }, t('restore_flag')),
+      ));
+    });
+    panel.appendChild(dList);
+  }
+
   setConflictBadge(issues.length);
 }
 
@@ -3553,6 +3683,7 @@ function init() {
     });
     State.instructors = saved.instructors || [];
     State.lang = saved.lang || 'en';
+    State.dismissedConflicts = Array.isArray(saved.dismissedConflicts) ? saved.dismissedConflicts : [];
     if (saved.config) {
       if (Array.isArray(saved.config.dayPatterns) && saved.config.dayPatterns.length)
         State.config.dayPatterns = saved.config.dayPatterns;
