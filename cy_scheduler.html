@@ -788,6 +788,16 @@ const DEFAULT_LAB_SLOTS = [
   { code: '1700-1840', start: 17*60,   end: 18*60+40 },
   { code: '2100-2240', start: 21*60,   end: 22*60+40 },
 ];
+const DEFAULT_ONLINE_SLOTS = [
+  { code: '0800-0920', start: 8*60,    end: 9*60+20 },
+  { code: '0930-1050', start: 9*60+30, end: 10*60+50 },
+  { code: '1100-1220', start: 11*60,   end: 12*60+20 },
+  { code: '1300-1450', start: 13*60,   end: 14*60+50 },
+  { code: '1500-1620', start: 15*60,   end: 16*60+20 },
+  { code: '1700-1820', start: 17*60,   end: 18*60+20 },
+  { code: '1900-2040', start: 19*60,   end: 20*60+40 },
+  { code: '2000-2120', start: 20*60,   end: 21*60+20 },
+];
 
 // Live config — read from State.config; mutations rebuild affected dropdowns.
 const DAY_PATTERNS = () => State.config.dayPatterns;
@@ -835,6 +845,7 @@ const I18N = {
     settings_days_help: 'Codes use letters U M T W R (Sun–Thu); combine with commas. Label is what appears in the dropdown.',
     settings_lecture_h: 'Lecture time slots',
     settings_lab_h: 'Lab time slots',
+    settings_online_h: 'Online time slots',
     settings_slots_help: 'Set start and end (24h). Code is auto-generated.',
     settings_reset: 'Reset to defaults',
     settings_reset_confirm: 'Reset all settings to defaults?',
@@ -937,6 +948,7 @@ const I18N = {
     settings_days_help: 'الرموز U M T W R (الأحد–الخميس)، تُجمع بفواصل. اللعنوان يظهر في القائمة.',
     settings_lecture_h: 'فترات النظري',
     settings_lab_h: 'فترات العملي',
+    settings_online_h: 'فترات عن بعد',
     settings_slots_help: 'حدّد البداية والنهاية (24س). الرمز يُولَّد تلقائياً.',
     settings_reset: 'إعادة الافتراضات',
     settings_reset_confirm: 'إعادة جميع الإعدادات للقيم الافتراضية؟',
@@ -1047,6 +1059,7 @@ const State = {
     dayPatterns: DEFAULT_DAY_PATTERNS.map(p => ({ ...p })),
     lectureSlots: DEFAULT_LECTURE_SLOTS.map(s => ({ ...s })),
     labSlots: DEFAULT_LAB_SLOTS.map(s => ({ ...s })),
+    onlineSlots: DEFAULT_ONLINE_SLOTS.map(s => ({ ...s })),
   },
 };
 
@@ -1251,7 +1264,11 @@ function mutateCoalesced(fn) {
 // RULES / CONFLICTS
 // ====================================================================
 
-const slotsFor = (type) => type === 'lab' ? State.config.labSlots : State.config.lectureSlots;
+const slotsFor = (type) => {
+  if (type === 'lab') return State.config.labSlots;
+  if (type === 'online') return State.config.onlineSlots;
+  return State.config.lectureSlots;
+};
 const findSlot = (type, code) => slotsFor(type).find(s => s.code === code) || null;
 const rangesOverlap = (a, b) => a.start < b.end && b.start < a.end;
 const expandDays = (s) => s ? s.split(',').map(x => x.trim()).filter(Boolean) : [];
@@ -1304,14 +1321,20 @@ function detectConflicts() {
       const aKey = a.rowId + '|' + a.blockId;
       const bKey = b.rowId + '|' + b.blockId;
 
-      // R5: same course (same row → its own Block 1 vs Block 2) at overlapping time.
-      // Different courses overlapping in the same level is allowed (parallel sections).
-      if (a.rowId === b.rowId) {
-        const reason = `Course "${a.code || a.name}" has Block ${a.blockIdx + 1} and Block ${b.blockIdx + 1} at the same time.`;
+      // R5: same course at overlapping time. "Same course" = same row OR
+      // any rows that share the same non-empty code (e.g. CECS-211 lecture
+      // row + CECS-211 online row). Catches the case where Block 1, Block 2,
+      // and Online sections of the same course collide on day & time.
+      const sameCourse = (a.rowId === b.rowId)
+        || (a.code && b.code && a.code === b.code);
+      if (sameCourse) {
+        const aKindA = a.rowId === b.rowId ? `Block ${a.blockIdx + 1}` : `${a.type} B${a.blockIdx + 1}`;
+        const aKindB = a.rowId === b.rowId ? `Block ${b.blockIdx + 1}` : `${b.type} B${b.blockIdx + 1}`;
+        const reason = `Course "${a.code || a.name}" has ${aKindA} and ${aKindB} at the same time.`;
         issues.push({ rule: 'R5', day: a.day, reason, a: aKey, b: bKey });
         byBlock.add(aKey); byBlock.add(bKey);
-        addReason(aKey, `R5 ${a.day}: same course, also has B${b.blockIdx + 1} at this time`);
-        addReason(bKey, `R5 ${a.day}: same course, also has B${a.blockIdx + 1} at this time`);
+        addReason(aKey, `R5 ${a.day}: same course, also has ${aKindB} at this time`);
+        addReason(bKey, `R5 ${a.day}: same course, also has ${aKindA} at this time`);
       }
       // R6: instructor double-book — only flagged when both blocks are non-online
       // (lecture or lab). Instructor on an online block doesn't lock physical time.
@@ -2023,10 +2046,22 @@ const DAY_LABEL = { U: 'Sun', M: 'Mon', T: 'Tue', W: 'Wed', R: 'Thu' };
 
 // Combined slot list, sorted by start time (lecture + lab interleaved).
 function allSlotsSorted() {
-  const merged = [
-    ...State.config.lectureSlots.map(s => ({ ...s, kind: 'lecture' })),
-    ...State.config.labSlots.map(s => ({ ...s, kind: 'lab' })),
-  ];
+  // Combine all three slot kinds; dedupe by code (so a slot defined in
+  // multiple kinds shows up as a single grid row labelled with each kind).
+  const byCode = new Map();
+  const add = (s, kind) => {
+    const cur = byCode.get(s.code);
+    if (cur) {
+      if (!cur.kinds.includes(kind)) cur.kinds.push(kind);
+    } else {
+      byCode.set(s.code, { ...s, kinds: [kind], kind });
+    }
+  };
+  State.config.lectureSlots.forEach(s => add(s, 'lecture'));
+  State.config.labSlots.forEach(s => add(s, 'lab'));
+  State.config.onlineSlots.forEach(s => add(s, 'online'));
+  const merged = Array.from(byCode.values());
+  merged.forEach(s => { s.kind = s.kinds.join('+'); });
   merged.sort((a, b) => a.start - b.start || a.end - b.end);
   return merged;
 }
@@ -2508,6 +2543,8 @@ function renderSettings() {
   panel.appendChild(renderSlotsSection('lecture'));
   panel.appendChild(el('div', { style: 'height:18px;' }));
   panel.appendChild(renderSlotsSection('lab'));
+  panel.appendChild(el('div', { style: 'height:18px;' }));
+  panel.appendChild(renderSlotsSection('online'));
 }
 
 function renderDayPatternsSection() {
@@ -2569,12 +2606,22 @@ function renderDayPatternsSection() {
   return wrap;
 }
 
+function _slotsListFor(kind) {
+  if (kind === 'lab') return State.config.labSlots;
+  if (kind === 'online') return State.config.onlineSlots;
+  return State.config.lectureSlots;
+}
+function _slotsHeadingFor(kind) {
+  if (kind === 'lab') return 'settings_lab_h';
+  if (kind === 'online') return 'settings_online_h';
+  return 'settings_lecture_h';
+}
 function renderSlotsSection(kind) {
-  const list = kind === 'lab' ? State.config.labSlots : State.config.lectureSlots;
+  const list = _slotsListFor(kind);
   const wrap = el('div', { class: 'level-section' });
   wrap.appendChild(el('div', { class: 'level-head' },
     el('div', {},
-      el('div', { class: 'level-name' }, t(kind === 'lab' ? 'settings_lab_h' : 'settings_lecture_h')),
+      el('div', { class: 'level-name' }, t(_slotsHeadingFor(kind))),
       el('div', { class: 'level-meta' }, t('settings_slots_help')),
     ),
   ));
@@ -2654,7 +2701,7 @@ function removeDayPattern(idx) {
   renderSchedule();
 }
 function removeSlot(kind, idx) {
-  const list = kind === 'lab' ? State.config.labSlots : State.config.lectureSlots;
+  const list = _slotsListFor(kind);
   mutate(() => { list.splice(idx, 1); });
   renderSettings();
   renderSchedule();
@@ -2671,6 +2718,7 @@ function confirmResetConfig() {
         State.config.dayPatterns = DEFAULT_DAY_PATTERNS.map(p => ({ ...p }));
         State.config.lectureSlots = DEFAULT_LECTURE_SLOTS.map(s => ({ ...s }));
         State.config.labSlots = DEFAULT_LAB_SLOTS.map(s => ({ ...s }));
+        State.config.onlineSlots = DEFAULT_ONLINE_SLOTS.map(s => ({ ...s }));
       });
       renderSettings();
       renderSchedule();
@@ -3512,6 +3560,8 @@ function init() {
         State.config.lectureSlots = saved.config.lectureSlots;
       if (Array.isArray(saved.config.labSlots) && saved.config.labSlots.length)
         State.config.labSlots = saved.config.labSlots;
+      if (Array.isArray(saved.config.onlineSlots) && saved.config.onlineSlots.length)
+        State.config.onlineSlots = saved.config.onlineSlots;
     }
   }
   State.snapshots = Storage.loadSnapshots();
