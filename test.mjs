@@ -1172,6 +1172,96 @@ await settle();
 check('[D8] Clear dismissals re-flags conflicts',
   parseInt(await page.textContent('#conflictBadge'), 10) >= 1);
 
+console.log('\n══ COLLAPSIBLE BLOCKS + PER-BLOCK DAYS ══');
+
+// Reset and seed a single section with one block, fully filled.
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'Level 3' }],
+    rows: [{
+      id: 'r1', levelId: 'L1', code: 'CECS-211', name: 'Programming',
+      type: 'lecture', credits: 3, days: 'M,W',
+      blocks: [
+        { id: 'b1', time: '0800-0920', instr: 'Dr. K', room: 'R-101', days: '' },
+        { id: 'b2', time: '0930-1050', instr: 'Dr. K', room: 'R-101', days: 'T,R' },
+      ],
+    }],
+    instructors: [{ name: 'Dr. K', minLoad: 12 }],
+    lang: 'en',
+    dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+
+// B1: Both blocks render in expanded state by default
+const expandedHeads = await page.locator('.block .block-head.clickable').count();
+check('[B1] block heads are clickable',
+  expandedHeads === 2, `count=${expandedHeads}`);
+const fieldsBeforeCollapse = await page.locator('.block .row-grid').count();
+check('[B2] both blocks render fields by default',
+  fieldsBeforeCollapse === 2);
+
+// B3: Click first block's header to collapse
+await page.locator('.block .block-head.clickable').first().click();
+await settle();
+const collapsedCls = await page.locator('.block').first().getAttribute('class');
+check('[B3] first block now has .collapsed class',
+  collapsedCls.includes('collapsed'));
+const fieldsAfter = await page.locator('.block:not(.collapsed) .row-grid').count();
+check('[B4] only the open block still shows fields',
+  fieldsAfter === 1);
+
+// B5: Click again to re-open
+await page.locator('.block .block-head.clickable').first().click();
+await settle();
+const reopenedCls = await page.locator('.block').first().getAttribute('class');
+check('[B5] click again expands the block',
+  !reopenedCls.includes('collapsed'));
+
+// B6: Per-block days override is honoured by detectConflicts
+// Block 1 inherits days "M,W"; Block 2 overrides to "T,R" so they DON'T
+// share a day → no R5 even though both sit at 0800-0920 and 0930-1050.
+// First make their times the same so an overlap COULD exist if days matched.
+await page.evaluate(() => {
+  const s = JSON.parse(localStorage.getItem('cy_sched_state_v3'));
+  s.rows[0].blocks[0].time = '0800-0920';  // M,W (inherit)
+  s.rows[0].blocks[1].time = '0800-0920';  // T,R (override)
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify(s));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+await page.click('.tab:has-text("Conflicts")'); await settle();
+const overrideBadge = await page.textContent('#conflictBadge');
+check('[B6] per-block days override prevents overlap conflict',
+  parseInt(overrideBadge, 10) === 0, `badge=${overrideBadge}`);
+
+// B7: Now flip block 2 back to inherit (empty days) — same time, same days
+// → R5 fires.
+await page.evaluate(() => {
+  const s = JSON.parse(localStorage.getItem('cy_sched_state_v3'));
+  s.rows[0].blocks[1].days = '';
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify(s));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+const inheritBadge = await page.textContent('#conflictBadge');
+check('[B7] inheriting section days re-introduces R5',
+  parseInt(inheritBadge, 10) >= 1, `badge=${inheritBadge}`);
+
+// B8: Day pattern dropdown shows the inherit option
+await page.click('.tab:has-text("Schedule")'); await settle();
+const dpOpts = await page.locator('.block:not(.collapsed) .field:has-text("Day pattern") select option')
+  .first().textContent();
+check('[B8] block day-pattern dropdown shows inherit option',
+  /inherit/i.test(dpOpts), dpOpts);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');
