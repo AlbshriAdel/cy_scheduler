@@ -342,6 +342,51 @@
   }
   .block.collapsed { padding: 6px 10px; }
   .block.collapsed .block-head { margin-bottom: 0; }
+
+  /* Inline carets and collapsible headers for Level + Section */
+  .collapse-caret {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    background: transparent;
+    color: var(--ink-faint);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+  }
+  .collapse-caret:hover { background: var(--paper-warm); color: var(--ink); }
+  .collapse-caret-inline {
+    display: inline-block;
+    color: var(--ink-faint);
+    font-size: 10px;
+    margin-right: 6px;
+    width: 12px;
+  }
+  body[dir="rtl"] .collapse-caret-inline { margin-right: 0; margin-left: 6px; }
+
+  .level-head.clickable, .section-head.clickable {
+    cursor: pointer;
+    user-select: none;
+  }
+  .level-head.clickable:hover, .section-head.clickable:hover {
+    background: rgba(42,53,80,.03);
+    border-radius: 6px;
+  }
+
+  .level-section.collapsed { padding-bottom: 18px; }
+  .level-section.collapsed .level-head { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .section-card.collapsed { padding: 12px 14px; }
+  .section-card.collapsed .section-head { margin-bottom: 0; }
+  .section-summary {
+    margin-left: 8px;
+    color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    font-weight: 400;
+    font-size: 12px;
+    text-transform: lowercase;
+  }
+  body[dir="rtl"] .section-summary { margin-left: 0; margin-right: 8px; }
   .block-name {
     font-family: 'Geist Mono', monospace; font-size: 11px;
     letter-spacing: .08em; text-transform: uppercase;
@@ -923,6 +968,8 @@ const I18N = {
     delete: 'Delete', clear: 'Clear', remove: 'Remove',
     block_open: 'Open block (click to expand)',
     block_close: 'Close block (click to collapse)',
+    expand: 'Expand',
+    collapse: 'Collapse',
     days_block: 'Day pattern',
     inherit: 'inherit',
     confirm_delete_section: 'Delete this section?',
@@ -1037,6 +1084,8 @@ const I18N = {
     delete: 'حذف', clear: 'تفريغ', remove: 'إزالة',
     block_open: 'فتح البلوك (انقر للتوسيع)',
     block_close: 'إغلاق البلوك (انقر للطي)',
+    expand: 'توسيع',
+    collapse: 'طي',
     days_block: 'نمط الأيام',
     inherit: 'يرث',
     confirm_delete_section: 'حذف هذه الشعبة؟',
@@ -1659,8 +1708,12 @@ function renderSchedule() {
 
 function renderLevel(level, conflictBlocks) {
   const sections = State.rows.filter(r => r.levelId === level.id);
+  const collapsed = _collapsedLevels.has(level.id);
 
-  const card = el('div', { class: 'level-section', 'data-level': level.id });
+  const card = el('div', {
+    class: 'level-section' + (collapsed ? ' collapsed' : ''),
+    'data-level': level.id,
+  });
 
   // Head
   const nameInp = el('input', {
@@ -1673,14 +1726,35 @@ function renderLevel(level, conflictBlocks) {
   nameInp.addEventListener('input', (e) => {
     mutateCoalesced(() => { level.name = e.target.value; });
   });
+  // Don't toggle collapse when typing in the name input.
+  nameInp.addEventListener('click', (e) => e.stopPropagation());
 
-  card.appendChild(el('div', { class: 'level-head' },
+  // Caret toggles level body visibility.
+  const caret = el('button', {
+    class: 'collapse-caret',
+    title: collapsed ? t('expand') : t('collapse'),
+    'aria-expanded': collapsed ? 'false' : 'true',
+    onclick: (e) => { e.stopPropagation(); toggleLevelCollapse(level.id); },
+  }, collapsed ? '▸' : '▾');
+
+  card.appendChild(el('div', {
+    class: 'level-head clickable',
+    role: 'button',
+    onclick: () => toggleLevelCollapse(level.id),
+    onkeydown: (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+        e.preventDefault();
+        toggleLevelCollapse(level.id);
+      }
+    },
+  },
     el('div', { class: 'level-title-row' },
+      caret,
       nameInp,
       el('span', { class: 'level-meta' },
         `${sections.length} ${t('sections_count').toLowerCase()}`),
     ),
-    el('div', { class: 'level-actions' },
+    el('div', { class: 'level-actions', onclick: (e) => e.stopPropagation() },
       el('button', {
         class: 'btn btn-sm',
         onclick: () => addSection(level.id),
@@ -1702,6 +1776,8 @@ function renderLevel(level, conflictBlocks) {
     ),
   ));
 
+  if (collapsed) return card;
+
   if (sections.length === 0) {
     card.appendChild(el('div', { style: 'padding:14px 4px; font-size:13px; color:var(--ink-faint);' },
       t('empty_level_sub'),
@@ -1715,19 +1791,42 @@ function renderLevel(level, conflictBlocks) {
 
 function renderSection(section, conflictBlocks) {
   const hasConflict = section.blocks.some(b => conflictBlocks.has(section.id + '|' + b.id));
+  const collapsed = _collapsedSections.has(section.id);
 
   const card = el('div', {
-    class: 'section-card' + (hasConflict ? ' has-conflict' : ''),
+    class: 'section-card' + (hasConflict ? ' has-conflict' : '') + (collapsed ? ' collapsed' : ''),
     'data-section': section.id,
   });
 
-  // Head
-  card.appendChild(el('div', { class: 'section-head' },
+  // Head — clickable, toggles section body. Caret on the left of the title.
+  const caret = el('span', {
+    class: 'collapse-caret-inline',
+    'aria-expanded': collapsed ? 'false' : 'true',
+  }, collapsed ? '▸' : '▾');
+
+  card.appendChild(el('div', {
+    class: 'section-head clickable',
+    role: 'button',
+    title: collapsed ? t('expand') : t('collapse'),
+    onclick: () => toggleSectionCollapse(section.id),
+    onkeydown: (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+        e.preventDefault();
+        toggleSectionCollapse(section.id);
+      }
+    },
+  },
     el('div', { class: 'section-title' },
+      caret,
       el('span', { class: 'section-code' }, section.code || '—'),
       el('span', { class: 'section-name' }, section.name || ''),
+      // Compact summary when collapsed
+      collapsed
+        ? el('span', { class: 'section-summary' },
+            ` · ${section.type} · ${section.blocks.length} ${t('blocks_label').toLowerCase()}`)
+        : null,
     ),
-    el('div', { class: 'section-actions' },
+    el('div', { class: 'section-actions', onclick: (e) => e.stopPropagation() },
       el('button', {
         class: 'btn btn-ghost btn-icon',
         title: t('delete'),
@@ -1735,6 +1834,8 @@ function renderSection(section, conflictBlocks) {
       }, '✕'),
     ),
   ));
+
+  if (collapsed) return card;
 
   // Meta
   const grid = el('div', { class: 'row-grid' });
@@ -1831,11 +1932,26 @@ function daysSelect(section) {
   return sel;
 }
 
-// Per-session collapsed-block tracking (in memory only — resets on reload).
+// Per-session collapsed-block / collapsed-section / collapsed-level
+// tracking (in memory only — resets on reload). Just a transient view
+// preference, not data.
 const _collapsedBlocks = new Set();
+const _collapsedSections = new Set();
+const _collapsedLevels = new Set();
+
 function toggleBlockCollapse(blockId) {
   if (_collapsedBlocks.has(blockId)) _collapsedBlocks.delete(blockId);
   else _collapsedBlocks.add(blockId);
+  renderSchedule();
+}
+function toggleSectionCollapse(sectionId) {
+  if (_collapsedSections.has(sectionId)) _collapsedSections.delete(sectionId);
+  else _collapsedSections.add(sectionId);
+  renderSchedule();
+}
+function toggleLevelCollapse(levelId) {
+  if (_collapsedLevels.has(levelId)) _collapsedLevels.delete(levelId);
+  else _collapsedLevels.add(levelId);
   renderSchedule();
 }
 

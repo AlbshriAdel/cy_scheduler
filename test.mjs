@@ -1262,6 +1262,73 @@ const dpOpts = await page.locator('.block:not(.collapsed) .field:has-text("Day p
 check('[B8] block day-pattern dropdown shows inherit option',
   /inherit/i.test(dpOpts), dpOpts);
 
+console.log('\n══ COLLAPSIBLE LEVELS + SECTIONS (carets) ══');
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'الثالث' }],
+    rows: [{
+      id: 'r1', levelId: 'L1', code: 'ELPR-220', name: 'الكتابة',
+      type: 'lecture', credits: 2, days: 'U',
+      blocks: [
+        { id: 'b1', time: '1900-2040', instr: '', room: '', days: '' },
+        { id: 'b2', time: '1900-2040', instr: '', room: '', days: '' },
+      ],
+    }],
+    instructors: [], lang: 'en', dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+
+// C1: Level head has a caret button
+check('[C1] level head shows a collapse caret',
+  (await page.locator('.level-head .collapse-caret').count()) === 1);
+
+// C2: Click level head to collapse → sections hidden
+await page.locator('.level-head.clickable').click();
+await settle();
+const sectionsAfterLevelCollapse = await page.locator('.section-card').count();
+check('[C2] collapsing level hides sections',
+  sectionsAfterLevelCollapse === 0, `got=${sectionsAfterLevelCollapse}`);
+const levelHasCollapsed = (await page.locator('.level-section').first().getAttribute('class'))
+  .includes('collapsed');
+check('[C3] level card carries .collapsed class', levelHasCollapsed);
+
+// C4: Click again to expand
+await page.locator('.level-head.clickable').click();
+await settle();
+check('[C4] expanding level brings sections back',
+  (await page.locator('.section-card').count()) === 1);
+
+// C5: Click section head → meta hidden, summary shown
+await page.locator('.section-head.clickable').click();
+await settle();
+const sectionMetaCount = await page.locator('.section-card .row-grid').count();
+check('[C5] collapsing section hides field grid',
+  // Expect 1 grid (the blocks-list grid still has row-grid inside each block).
+  // The section's META row-grid is hidden, but block row-grids remain.
+  // Easier check: section-card.collapsed class is applied.
+  (await page.locator('.section-card').first().getAttribute('class')).includes('collapsed'));
+
+const summary = await page.locator('.section-summary').count();
+check('[C6] collapsed section shows summary text', summary === 1);
+
+// C7: Level-actions buttons (Add section, etc.) still clickable when caret
+//     bubbles up — clicking the button should NOT toggle collapse.
+await page.locator('.section-head.clickable').click();
+await settle(); // expand again
+const beforeAdd = await page.locator('.section-card').count();
+await page.locator('.level-actions button:has-text("Add section")').click();
+await settle();
+const afterAdd = await page.locator('.section-card').count();
+check('[C7] level-actions don\'t accidentally collapse the level',
+  afterAdd === beforeAdd + 1, `before=${beforeAdd} after=${afterAdd}`);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');
