@@ -9,31 +9,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #F5F0E8;
-    --paper-warm: #EDE5D6;
-    --paper-warmer: #E5DBC5;
+    /* Cool, low-saturation neutrals — easier on the eyes than the
+       previous warm-paper stack. Cards are pure white, the body is a
+       soft cool grey, and accents are slightly muted. */
+    --paper: #F4F6F8;
+    --paper-warm: #EAEEF2;
+    --paper-warmer: #DEE3E9;
     --card: #FFFFFF;
-    --card-tint: #FBF7EF;
-    --ink: #1A1614;
-    --ink-soft: #4A423B;
-    --ink-faint: #8A7F73;
-    --rule: #D8CDB8;
-    --rule-soft: #EAE0CC;
+    --card-tint: #F7F9FB;
+    --ink: #1A2030;
+    --ink-soft: #4A5260;
+    --ink-faint: #828B98;
+    --rule: #DDE2E8;
+    --rule-soft: #EBEEF2;
 
-    --accent: #1E2438;
-    --accent-soft: #3A4259;
-    --terra: #A0522D;
+    --accent: #2A3550;
+    --accent-soft: #44506C;
+    --terra: #9D5A36;
 
-    --status-ok: #2E5934;
-    --status-ok-bg: #DCEAD2;
-    --status-warn: #8C5A1C;
-    --status-warn-bg: #FCE8C2;
-    --status-bad: #8B2914;
-    --status-bad-bg: #F4D6CD;
+    --status-ok: #2E6E3F;
+    --status-ok-bg: #E0EFE2;
+    --status-warn: #8A6A1F;
+    --status-warn-bg: #F4E9CC;
+    --status-bad: #A23D24;
+    --status-bad-bg: #F4DDD3;
     --status-info: #2A4A6B;
-    --status-info-bg: #D6E1EC;
-    --status-mute: #6B6258;
-    --status-mute-bg: #ECE4D2;
+    --status-info-bg: #DEE6EE;
+    --status-mute: #6B7280;
+    --status-mute-bg: #E6E9EE;
 
     --shadow-sm: 0 1px 2px rgba(26,22,20,.06);
     --shadow-md: 0 2px 8px rgba(26,22,20,.08);
@@ -52,8 +55,8 @@
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
     background-image:
-      radial-gradient(1200px 600px at 90% -10%, rgba(160,82,45,.05), transparent 60%),
-      radial-gradient(900px 500px at -10% 100%, rgba(30,36,56,.04), transparent 60%);
+      radial-gradient(1200px 600px at 90% -10%, rgba(42,53,80,.025), transparent 60%),
+      radial-gradient(900px 500px at -10% 100%, rgba(42,53,80,.02), transparent 60%);
     min-height: 100vh;
   }
   body[dir="rtl"] { font-family: 'Tajawal', 'Geist', sans-serif; }
@@ -248,7 +251,7 @@
     box-shadow: var(--shadow-sm);
   }
   .section-card:last-child { margin-bottom: 0; }
-  .section-card.has-conflict { border-color: var(--status-bad); background: #FEF6F2; }
+  .section-card.has-conflict { border-color: var(--status-bad); background: #FBF2EE; }
 
   .section-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -296,17 +299,18 @@
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 10px;
   }
-  /* BLOCK — distinct tint so the L→S→B hierarchy is visually obvious */
+  /* BLOCK — calm cool tint with a slim accent stripe so the L→S→B
+     hierarchy is still legible without warm color overload. */
   .block {
     border: 1px solid var(--rule-soft);
-    border-left: 3px solid var(--terra);
+    border-left: 3px solid var(--accent-soft);
     border-radius: 6px;
     padding: 10px;
     background: var(--card-tint);
   }
   body[dir="rtl"] .block {
     border-left: 1px solid var(--rule-soft);
-    border-right: 3px solid var(--terra);
+    border-right: 3px solid var(--accent-soft);
   }
   .block-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -320,7 +324,7 @@
     user-select: none;
     transition: background .12s;
   }
-  .block-head.clickable:hover { background: rgba(160,82,45,.06); }
+  .block-head.clickable:hover { background: rgba(42,53,80,.05); }
   .block-head .block-caret {
     display: inline-block;
     width: 12px;
