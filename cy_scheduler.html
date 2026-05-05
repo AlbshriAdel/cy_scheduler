@@ -312,6 +312,32 @@
     display: flex; align-items: center; justify-content: space-between;
     gap: 8px; margin-bottom: 8px;
   }
+  .block-head.clickable {
+    cursor: pointer;
+    border-radius: 4px;
+    margin: -2px -4px 6px;
+    padding: 2px 4px;
+    user-select: none;
+    transition: background .12s;
+  }
+  .block-head.clickable:hover { background: rgba(160,82,45,.06); }
+  .block-head .block-caret {
+    display: inline-block;
+    width: 12px;
+    color: var(--terra);
+    font-size: 10px;
+    margin-right: 2px;
+  }
+  body[dir="rtl"] .block-head .block-caret { margin-right: 0; margin-left: 2px; }
+  .block-summary {
+    color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+  .block.collapsed { padding: 6px 10px; }
+  .block.collapsed .block-head { margin-bottom: 0; }
   .block-name {
     font-family: 'Geist Mono', monospace; font-size: 11px;
     letter-spacing: .08em; text-transform: uppercase;
@@ -891,6 +917,10 @@ const I18N = {
     instructor: 'Instructor', room: 'Room',
     block_n: 'Block',
     delete: 'Delete', clear: 'Clear', remove: 'Remove',
+    block_open: 'Open block (click to expand)',
+    block_close: 'Close block (click to collapse)',
+    days_block: 'Day pattern',
+    inherit: 'inherit',
     confirm_delete_section: 'Delete this section?',
     confirm_delete_level: 'Delete this level and all its sections?',
     confirm_delete_block: 'Remove this block?',
@@ -1001,6 +1031,10 @@ const I18N = {
     instructor: 'المدرس', room: 'القاعة',
     block_n: 'بلوك',
     delete: 'حذف', clear: 'تفريغ', remove: 'إزالة',
+    block_open: 'فتح البلوك (انقر للتوسيع)',
+    block_close: 'إغلاق البلوك (انقر للطي)',
+    days_block: 'نمط الأيام',
+    inherit: 'يرث',
     confirm_delete_section: 'حذف هذه الشعبة؟',
     confirm_delete_level: 'حذف هذا المستوى وكل شعبه؟',
     confirm_delete_block: 'إزالة هذا البلوك؟',
@@ -1291,21 +1325,27 @@ const findSlot = (type, code) => slotsFor(type).find(s => s.code === code) || nu
 const rangesOverlap = (a, b) => a.start < b.end && b.start < a.end;
 const expandDays = (s) => s ? s.split(',').map(x => x.trim()).filter(Boolean) : [];
 
+// Effective days for a block: block-level override first, falling back to
+// the section's days field. Empty string means "inherit".
+function effectiveDays(row, block) {
+  return (block && block.days) ? block.days : row.days;
+}
+
 function buildSessions() {
   const out = [];
   State.rows.forEach(r => {
-    if (!r.days) return;
-    const days = expandDays(r.days);
     r.blocks.forEach((b, idx) => {
+      const dayStr = effectiveDays(r, b);
+      if (!dayStr) return;
       if (!b.time) return;
       const slot = findSlot(r.type, b.time);
       if (!slot) return;
-      days.forEach(day => {
+      expandDays(dayStr).forEach(day => {
         out.push({
           rowId: r.id, blockId: b.id, blockIdx: idx, day,
           start: slot.start, end: slot.end, slotCode: b.time,
           levelId: r.levelId, type: r.type,
-          code: r.code, name: r.name, days: r.days,
+          code: r.code, name: r.name, days: dayStr,
           instr: b.instr, room: b.room,
         });
       });
@@ -1447,10 +1487,11 @@ function clearDismissals() {
 }
 
 function blockStatus(row, block, conflictBlocks) {
-  const filled = block.time || block.instr || block.room;
-  if (!filled && !row.days) return 'blank';
+  const filled = block.time || block.instr || block.room || block.days;
+  const effDays = effectiveDays(row, block);
+  if (!filled && !effDays) return 'blank';
   if (conflictBlocks.has(row.id + '|' + block.id)) return 'conflict';
-  if (!row.days) return 'missing-days';
+  if (!effDays) return 'missing-days';
   if (!block.time) return 'missing-time';
   if (!block.instr) return 'missing-instr';
   return 'scheduled';
@@ -1786,32 +1827,76 @@ function daysSelect(section) {
   return sel;
 }
 
+// Per-session collapsed-block tracking (in memory only — resets on reload).
+const _collapsedBlocks = new Set();
+function toggleBlockCollapse(blockId) {
+  if (_collapsedBlocks.has(blockId)) _collapsedBlocks.delete(blockId);
+  else _collapsedBlocks.add(blockId);
+  renderSchedule();
+}
+
+function blockSummaryText(section, block) {
+  const days = effectiveDays(section, block) || '—';
+  const parts = [days, block.time || '—'];
+  if (block.instr) parts.push(block.instr);
+  if (block.room) parts.push(block.room);
+  return parts.join(' · ');
+}
+
 function renderBlock(section, block, idx, conflictBlocks) {
   const status = blockStatus(section, block, conflictBlocks);
+  const collapsed = _collapsedBlocks.has(block.id);
 
-  const wrap = el('div', { class: 'block', 'data-block': block.id });
+  const wrap = el('div', {
+    class: 'block' + (collapsed ? ' collapsed' : ''),
+    'data-block': block.id,
+  });
 
   const actions = el('div', { class: 'block-actions' });
   if (section.blocks.length > 1) {
     actions.appendChild(el('button', {
       class: 'btn btn-ghost btn-icon',
       title: t('remove'),
-      onclick: () => removeBlock(section.id, block.id),
+      onclick: (e) => { e.stopPropagation(); removeBlock(section.id, block.id); },
     }, '✕'));
   }
 
-  wrap.appendChild(el('div', { class: 'block-head' },
-    el('span', { class: 'block-name' }, `${t('block_n')} ${idx + 1}`),
+  // Clickable header — toggles collapse. Caret hints at the current state.
+  const head = el('div', {
+    class: 'block-head clickable',
+    role: 'button',
+    tabindex: '0',
+    'aria-expanded': collapsed ? 'false' : 'true',
+    title: collapsed ? t('block_open') : t('block_close'),
+    onclick: () => toggleBlockCollapse(block.id),
+    onkeydown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleBlockCollapse(block.id);
+      }
+    },
+  },
+    el('span', { class: 'block-name' },
+      el('span', { class: 'block-caret' }, collapsed ? '▸' : '▾'),
+      ` ${t('block_n')} ${idx + 1}`,
+      collapsed
+        ? el('span', { class: 'block-summary' }, ' · ' + blockSummaryText(section, block))
+        : null,
+    ),
     el('div', { class: 'row', style: 'gap:6px;' },
       statusPill(status, _lastConflicts.reasonsByBlock.get(section.id + '|' + block.id)),
       actions),
-  ));
+  );
+  wrap.appendChild(head);
 
-  const grid = el('div', { class: 'row-grid' });
-  grid.appendChild(makeField(t('time'),       blockTimeSelect(section, block)));
-  grid.appendChild(makeInstrField(block));
-  grid.appendChild(makeField(t('room'),       blockRoomInput(block)));
-  wrap.appendChild(grid);
+  if (!collapsed) {
+    const grid = el('div', { class: 'row-grid' });
+    grid.appendChild(makeField(t('days_block'), blockDaysSelect(section, block)));
+    grid.appendChild(makeField(t('time'),       blockTimeSelect(section, block)));
+    grid.appendChild(makeInstrField(block));
+    grid.appendChild(makeField(t('room'),       blockRoomInput(block)));
+    wrap.appendChild(grid);
+  }
 
   return wrap;
 }
@@ -1848,6 +1933,27 @@ function blockTimeSelect(section, block) {
   });
   sel.addEventListener('change', (e) => {
     mutate(() => { block.time = e.target.value; });
+    refreshAfterEdit();
+  });
+  return sel;
+}
+
+// Per-block days dropdown. Empty value means "inherit from section". The
+// first option shows the inherited value so the user can see what's in
+// effect without setting an override.
+function blockDaysSelect(section, block) {
+  const sel = el('select', { class: 'field-select' });
+  const inherit = section.days || '—';
+  sel.appendChild(el('option', { value: '' },
+    `(${t('inherit')} ${inherit})`));
+  State.config.dayPatterns.forEach(p => {
+    if (!p.code) return;
+    const opt = el('option', { value: p.code }, p.label);
+    if (block.days === p.code) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', (e) => {
+    mutate(() => { block.days = e.target.value; });
     refreshAfterEdit();
   });
   return sel;
