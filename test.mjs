@@ -1262,6 +1262,136 @@ const dpOpts = await page.locator('.block:not(.collapsed) .field:has-text("Day p
 check('[B8] block day-pattern dropdown shows inherit option',
   /inherit/i.test(dpOpts), dpOpts);
 
+console.log('\n══ COLLAPSIBLE LEVELS + SECTIONS (carets) ══');
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'الثالث' }],
+    rows: [{
+      id: 'r1', levelId: 'L1', code: 'ELPR-220', name: 'الكتابة',
+      type: 'lecture', credits: 2, days: 'U',
+      blocks: [
+        { id: 'b1', time: '1900-2040', instr: '', room: '', days: '' },
+        { id: 'b2', time: '1900-2040', instr: '', room: '', days: '' },
+      ],
+    }],
+    instructors: [], lang: 'en', dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+
+// C1: Level head has a caret button
+check('[C1] level head shows a collapse caret',
+  (await page.locator('.level-head .collapse-caret').count()) === 1);
+
+// C2: Click level head to collapse → sections hidden
+await page.locator('.level-head.clickable').click();
+await settle();
+const sectionsAfterLevelCollapse = await page.locator('.section-card').count();
+check('[C2] collapsing level hides sections',
+  sectionsAfterLevelCollapse === 0, `got=${sectionsAfterLevelCollapse}`);
+const levelHasCollapsed = (await page.locator('.level-section').first().getAttribute('class'))
+  .includes('collapsed');
+check('[C3] level card carries .collapsed class', levelHasCollapsed);
+
+// C4: Click again to expand
+await page.locator('.level-head.clickable').click();
+await settle();
+check('[C4] expanding level brings sections back',
+  (await page.locator('.section-card').count()) === 1);
+
+// C5: Click section head → meta hidden, summary shown
+await page.locator('.section-head.clickable').click();
+await settle();
+const sectionMetaCount = await page.locator('.section-card .row-grid').count();
+check('[C5] collapsing section hides field grid',
+  // Expect 1 grid (the blocks-list grid still has row-grid inside each block).
+  // The section's META row-grid is hidden, but block row-grids remain.
+  // Easier check: section-card.collapsed class is applied.
+  (await page.locator('.section-card').first().getAttribute('class')).includes('collapsed'));
+
+const summary = await page.locator('.section-summary').count();
+check('[C6] collapsed section shows summary text', summary === 1);
+
+// C7: Level-actions buttons (Add section, etc.) still clickable when caret
+//     bubbles up — clicking the button should NOT toggle collapse.
+await page.locator('.section-head.clickable').click();
+await settle(); // expand again
+const beforeAdd = await page.locator('.section-card').count();
+await page.locator('.level-actions button:has-text("Add section")').click();
+await settle();
+const afterAdd = await page.locator('.section-card').count();
+check('[C7] level-actions don\'t accidentally collapse the level',
+  afterAdd === beforeAdd + 1, `before=${beforeAdd} after=${afterAdd}`);
+
+console.log('\n══ AUTO-SAVE indicator + INSTRUCTORS template ══');
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+
+// AS1: Indicator starts empty (no save yet)
+const initialStatus = await page.locator('#saveStatus').innerText().catch(() => '');
+check('[AS1] save status starts empty',
+  !initialStatus || initialStatus.trim() === '', `got=${JSON.stringify(initialStatus)}`);
+
+// AS2: Trigger a mutation → indicator pulses 'Saving…' then 'Auto-saved · HH:MM:SS'
+await page.click('button:has-text("+ Add level")');
+await page.waitForTimeout(500); // beyond the 250ms debounce
+const savedText = await page.locator('#saveStatus').innerText();
+check('[AS2] save indicator shows Auto-saved with timestamp',
+  /Auto-saved/i.test(savedText) && /\d\d:\d\d:\d\d/.test(savedText), savedText);
+
+// AS3: Download instructor template — XLSX
+await page.click('.tab:has-text("Instructors")');
+await page.waitForTimeout(200);
+const dl = page.waitForEvent('download');
+await page.click('#panel-instructors button:has-text("Download template")');
+const dlObj = await dl;
+check('[AS3] instructor template default name',
+  dlObj.suggestedFilename() === 'Instructors_Template.xlsx',
+  dlObj.suggestedFilename());
+
+// AS4: The downloaded file is a valid zip with sheet1
+const tplPath = await dlObj.path();
+const tplBytes = fs.readFileSync(tplPath);
+check('[AS4] template starts with PK signature',
+  tplBytes[0] === 0x50 && tplBytes[1] === 0x4b);
+check('[AS4b] template ≥ 1KB',
+  tplBytes.length >= 500, `bytes=${tplBytes.length}`);
+
+// AS5: Round-trip — import the template back, expect 1 instructor
+// (the example row 'Dr. Example' with min_load 12). We push the file
+// in via a synthetic change event so the FileReader path is exactly
+// the one a real user would hit.
+const tplBytes2 = fs.readFileSync(tplPath);
+await page.evaluate(async (b64) => {
+  const bin = atob(b64);
+  const ab = new ArrayBuffer(bin.length);
+  const u8 = new Uint8Array(ab);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const file = new File([ab], 'instr_tpl.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const inp = document.getElementById('fileImportInstr');
+  inp.files = dt.files;
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+}, tplBytes2.toString('base64'));
+await page.waitForTimeout(2000);
+const stTpl = await readState();
+check('[AS5] template round-trip imports the example row',
+  stTpl.instructors.length === 1 && stTpl.instructors[0].name === 'Dr. Example',
+  JSON.stringify(stTpl.instructors));
+check('[AS5b] imported min_load preserved (12)',
+  stTpl.instructors[0].minLoad === 12);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');

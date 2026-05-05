@@ -101,6 +101,24 @@
   }
   .toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+  /* Auto-save indicator */
+  .save-status {
+    font-size: 11px;
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: .04em;
+    color: var(--ink-faint);
+    padding: 4px 8px;
+    border-radius: 999px;
+    transition: opacity .4s, background .15s, color .15s;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .save-status.saving { color: var(--status-info); background: var(--status-info-bg); }
+  .save-status.saved  { color: var(--status-ok);   background: var(--status-ok-bg); }
+  .save-status.failed { color: var(--status-bad);  background: var(--status-bad-bg); }
+  .save-status.fading { opacity: .5; }
+  .save-status:empty  { display: none; }
+
   .btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 14px;
@@ -342,6 +360,51 @@
   }
   .block.collapsed { padding: 6px 10px; }
   .block.collapsed .block-head { margin-bottom: 0; }
+
+  /* Inline carets and collapsible headers for Level + Section */
+  .collapse-caret {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    background: transparent;
+    color: var(--ink-faint);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+  }
+  .collapse-caret:hover { background: var(--paper-warm); color: var(--ink); }
+  .collapse-caret-inline {
+    display: inline-block;
+    color: var(--ink-faint);
+    font-size: 10px;
+    margin-right: 6px;
+    width: 12px;
+  }
+  body[dir="rtl"] .collapse-caret-inline { margin-right: 0; margin-left: 6px; }
+
+  .level-head.clickable, .section-head.clickable {
+    cursor: pointer;
+    user-select: none;
+  }
+  .level-head.clickable:hover, .section-head.clickable:hover {
+    background: rgba(42,53,80,.03);
+    border-radius: 6px;
+  }
+
+  .level-section.collapsed { padding-bottom: 18px; }
+  .level-section.collapsed .level-head { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .section-card.collapsed { padding: 12px 14px; }
+  .section-card.collapsed .section-head { margin-bottom: 0; }
+  .section-summary {
+    margin-left: 8px;
+    color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    font-weight: 400;
+    font-size: 12px;
+    text-transform: lowercase;
+  }
+  body[dir="rtl"] .section-summary { margin-left: 0; margin-right: 8px; }
   .block-name {
     font-family: 'Geist Mono', monospace; font-size: 11px;
     letter-spacing: .08em; text-transform: uppercase;
@@ -693,12 +756,13 @@
     </div>
   </div>
   <div class="toolbar-actions">
+    <span id="saveStatus" class="save-status" aria-live="polite"></span>
     <button class="btn btn-ghost btn-icon" id="btnUndo" title="Undo" aria-label="Undo">↶</button>
     <button class="btn btn-ghost btn-icon" id="btnRedo" title="Redo" aria-label="Redo">↷</button>
     <span style="width:1px; height:20px; background:var(--rule);"></span>
     <button class="btn" id="btnImport" data-i18n="import">Import</button>
     <input type="file" id="fileImport" accept=".csv,.tsv,.json" hidden />
-    <input type="file" id="fileImportInstr" accept=".csv,.tsv" hidden />
+    <input type="file" id="fileImportInstr" accept=".csv,.tsv,.xlsx" hidden />
     <div class="menu-wrap">
       <button class="btn" id="btnExport" data-i18n="export">Export ▾</button>
       <div class="menu" id="exportMenu" role="menu">
@@ -923,6 +987,12 @@ const I18N = {
     delete: 'Delete', clear: 'Clear', remove: 'Remove',
     block_open: 'Open block (click to expand)',
     block_close: 'Close block (click to collapse)',
+    expand: 'Expand',
+    collapse: 'Collapse',
+    saving: 'Saving…',
+    saved_at: 'Auto-saved · {t}',
+    save_failed: 'Save failed',
+    instr_template: 'Download template',
     days_block: 'Day pattern',
     inherit: 'inherit',
     confirm_delete_section: 'Delete this section?',
@@ -1037,6 +1107,12 @@ const I18N = {
     delete: 'حذف', clear: 'تفريغ', remove: 'إزالة',
     block_open: 'فتح البلوك (انقر للتوسيع)',
     block_close: 'إغلاق البلوك (انقر للطي)',
+    expand: 'توسيع',
+    collapse: 'طي',
+    saving: 'جاري الحفظ…',
+    saved_at: 'تم الحفظ تلقائياً · {t}',
+    save_failed: 'فشل الحفظ',
+    instr_template: 'تنزيل قالب',
     days_block: 'نمط الأيام',
     inherit: 'يرث',
     confirm_delete_section: 'حذف هذه الشعبة؟',
@@ -1163,7 +1239,11 @@ const Storage = {
         dismissedConflicts: State.dismissedConflicts,
       };
       localStorage.setItem(STORAGE_STATE, JSON.stringify(data));
-    } catch (e) { console.warn('save failed', e); }
+      flashSaveStatus('saved');
+    } catch (e) {
+      console.warn('save failed', e);
+      flashSaveStatus('failed');
+    }
   },
   loadSnapshots() {
     try {
@@ -1222,9 +1302,33 @@ function migrateV2(v2) {
 
 let saveTimer = null;
 const debouncedSave = () => {
+  flashSaveStatus('saving');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => Storage.saveState(), 250);
 };
+
+// Save-status indicator. Shows '⟳ Saving…' the moment a mutation lands,
+// then '✓ Saved · HH:MM:SS' after the debounced write commits, then fades.
+let _saveStatusTimer = null;
+function flashSaveStatus(kind) {
+  const el = document.getElementById('saveStatus');
+  if (!el) return;
+  clearTimeout(_saveStatusTimer);
+  if (kind === 'saving') {
+    el.textContent = '⟳ ' + t('saving');
+    el.className = 'save-status saving';
+  } else if (kind === 'saved') {
+    const ts = new Date().toTimeString().slice(0, 8);
+    el.textContent = '✓ ' + t('saved_at').replace('{t}', ts);
+    el.className = 'save-status saved';
+    _saveStatusTimer = setTimeout(() => {
+      el.className = 'save-status saved fading';
+    }, 2200);
+  } else {
+    el.textContent = '✕ ' + t('save_failed');
+    el.className = 'save-status failed';
+  }
+}
 
 // ====================================================================
 // HISTORY
@@ -1659,8 +1763,12 @@ function renderSchedule() {
 
 function renderLevel(level, conflictBlocks) {
   const sections = State.rows.filter(r => r.levelId === level.id);
+  const collapsed = _collapsedLevels.has(level.id);
 
-  const card = el('div', { class: 'level-section', 'data-level': level.id });
+  const card = el('div', {
+    class: 'level-section' + (collapsed ? ' collapsed' : ''),
+    'data-level': level.id,
+  });
 
   // Head
   const nameInp = el('input', {
@@ -1673,14 +1781,35 @@ function renderLevel(level, conflictBlocks) {
   nameInp.addEventListener('input', (e) => {
     mutateCoalesced(() => { level.name = e.target.value; });
   });
+  // Don't toggle collapse when typing in the name input.
+  nameInp.addEventListener('click', (e) => e.stopPropagation());
 
-  card.appendChild(el('div', { class: 'level-head' },
+  // Caret toggles level body visibility.
+  const caret = el('button', {
+    class: 'collapse-caret',
+    title: collapsed ? t('expand') : t('collapse'),
+    'aria-expanded': collapsed ? 'false' : 'true',
+    onclick: (e) => { e.stopPropagation(); toggleLevelCollapse(level.id); },
+  }, collapsed ? '▸' : '▾');
+
+  card.appendChild(el('div', {
+    class: 'level-head clickable',
+    role: 'button',
+    onclick: () => toggleLevelCollapse(level.id),
+    onkeydown: (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+        e.preventDefault();
+        toggleLevelCollapse(level.id);
+      }
+    },
+  },
     el('div', { class: 'level-title-row' },
+      caret,
       nameInp,
       el('span', { class: 'level-meta' },
         `${sections.length} ${t('sections_count').toLowerCase()}`),
     ),
-    el('div', { class: 'level-actions' },
+    el('div', { class: 'level-actions', onclick: (e) => e.stopPropagation() },
       el('button', {
         class: 'btn btn-sm',
         onclick: () => addSection(level.id),
@@ -1702,6 +1831,8 @@ function renderLevel(level, conflictBlocks) {
     ),
   ));
 
+  if (collapsed) return card;
+
   if (sections.length === 0) {
     card.appendChild(el('div', { style: 'padding:14px 4px; font-size:13px; color:var(--ink-faint);' },
       t('empty_level_sub'),
@@ -1715,19 +1846,42 @@ function renderLevel(level, conflictBlocks) {
 
 function renderSection(section, conflictBlocks) {
   const hasConflict = section.blocks.some(b => conflictBlocks.has(section.id + '|' + b.id));
+  const collapsed = _collapsedSections.has(section.id);
 
   const card = el('div', {
-    class: 'section-card' + (hasConflict ? ' has-conflict' : ''),
+    class: 'section-card' + (hasConflict ? ' has-conflict' : '') + (collapsed ? ' collapsed' : ''),
     'data-section': section.id,
   });
 
-  // Head
-  card.appendChild(el('div', { class: 'section-head' },
+  // Head — clickable, toggles section body. Caret on the left of the title.
+  const caret = el('span', {
+    class: 'collapse-caret-inline',
+    'aria-expanded': collapsed ? 'false' : 'true',
+  }, collapsed ? '▸' : '▾');
+
+  card.appendChild(el('div', {
+    class: 'section-head clickable',
+    role: 'button',
+    title: collapsed ? t('expand') : t('collapse'),
+    onclick: () => toggleSectionCollapse(section.id),
+    onkeydown: (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+        e.preventDefault();
+        toggleSectionCollapse(section.id);
+      }
+    },
+  },
     el('div', { class: 'section-title' },
+      caret,
       el('span', { class: 'section-code' }, section.code || '—'),
       el('span', { class: 'section-name' }, section.name || ''),
+      // Compact summary when collapsed
+      collapsed
+        ? el('span', { class: 'section-summary' },
+            ` · ${section.type} · ${section.blocks.length} ${t('blocks_label').toLowerCase()}`)
+        : null,
     ),
-    el('div', { class: 'section-actions' },
+    el('div', { class: 'section-actions', onclick: (e) => e.stopPropagation() },
       el('button', {
         class: 'btn btn-ghost btn-icon',
         title: t('delete'),
@@ -1735,6 +1889,8 @@ function renderSection(section, conflictBlocks) {
       }, '✕'),
     ),
   ));
+
+  if (collapsed) return card;
 
   // Meta
   const grid = el('div', { class: 'row-grid' });
@@ -1831,11 +1987,26 @@ function daysSelect(section) {
   return sel;
 }
 
-// Per-session collapsed-block tracking (in memory only — resets on reload).
+// Per-session collapsed-block / collapsed-section / collapsed-level
+// tracking (in memory only — resets on reload). Just a transient view
+// preference, not data.
 const _collapsedBlocks = new Set();
+const _collapsedSections = new Set();
+const _collapsedLevels = new Set();
+
 function toggleBlockCollapse(blockId) {
   if (_collapsedBlocks.has(blockId)) _collapsedBlocks.delete(blockId);
   else _collapsedBlocks.add(blockId);
+  renderSchedule();
+}
+function toggleSectionCollapse(sectionId) {
+  if (_collapsedSections.has(sectionId)) _collapsedSections.delete(sectionId);
+  else _collapsedSections.add(sectionId);
+  renderSchedule();
+}
+function toggleLevelCollapse(levelId) {
+  if (_collapsedLevels.has(levelId)) _collapsedLevels.delete(levelId);
+  else _collapsedLevels.add(levelId);
   renderSchedule();
 }
 
@@ -2642,6 +2813,10 @@ function renderInstructors() {
     title: t('instructors_title'),
     sub: t('instructors_sub'),
     actions: [
+      el('button', {
+        class: 'btn',
+        onclick: () => downloadInstructorsTemplate(),
+      }, t('instr_template')),
       el('button', {
         class: 'btn',
         onclick: () => document.getElementById('fileImportInstr').click(),
@@ -3588,36 +3763,183 @@ function parseCSV(text, sep) {
 
 // Import instructors from a simple CSV/TSV: columns are name and (optional)
 // min_load. Headers are case-insensitive; both 'min_load' and 'minLoad' work.
-function importInstructors(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const text = String(e.target.result || '').replace(/^﻿/, '');
-    const sep = file.name.toLowerCase().endsWith('.tsv') ? '\t' : ',';
-    try {
-      const rows = parseCSV(text, sep);
-      if (!rows.length) throw new Error('Empty file');
-      const headers = rows[0].map(h => h.trim().toLowerCase());
-      const nameIdx = headers.findIndex(h => h === 'name' || h === 'instructor' || h === 'الاسم');
-      const minIdx  = headers.findIndex(h => h === 'min_load' || h === 'minload' || h === 'min' || h === 'الحد الأدنى');
-      let added = 0, skipped = 0;
-      mutate(() => {
-        rows.slice(1).forEach(cols => {
-          const name = (cols[nameIdx >= 0 ? nameIdx : 0] || '').trim();
-          if (!name) return;
-          if (State.instructors.some(i => i.name === name)) { skipped++; return; }
-          const minLoad = parseInt(cols[minIdx], 10) || 12;
-          State.instructors.push({ name, minLoad });
-          added++;
-        });
-      });
-      renderInstructors();
-      renderSchedule();
-      toast(`${t('imported')}: ${added}${skipped ? ` (${skipped} duplicates)` : ''}`, 'ok');
-    } catch (err) {
-      toast('Import failed: ' + err.message, 'bad');
+// Pull rows out of an XLSX worksheet as a 2-D array of strings, so the
+// downstream importer can treat XLSX and CSV identically. Handles both
+// inline strings and shared-string references; everything else is read
+// as a literal value attribute.
+function _xlsxRowsFromArrayBuffer(ab) {
+  const bytes = new Uint8Array(ab);
+  // Find every local file header (PK\3\4) and pluck the entry name + size.
+  // STORE method is straightforward; DEFLATE we run through the browser's
+  // DecompressionStream.
+  const dec = new TextDecoder();
+  const entries = {};
+  // EOCD scan from the tail
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= 0; i--) {
+    if (bytes[i] === 0x50 && bytes[i+1] === 0x4b && bytes[i+2] === 0x05 && bytes[i+3] === 0x06) {
+      eocd = i; break;
     }
+  }
+  if (eocd < 0) throw new Error('Not a zip');
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const totalEntries = dv.getUint16(eocd + 10, true);
+  let cdOff = dv.getUint32(eocd + 16, true);
+  const reads = [];
+  for (let i = 0; i < totalEntries; i++) {
+    const method = dv.getUint16(cdOff + 10, true);
+    const compSize = dv.getUint32(cdOff + 20, true);
+    const nameLen = dv.getUint16(cdOff + 28, true);
+    const extraLen = dv.getUint16(cdOff + 30, true);
+    const commentLen = dv.getUint16(cdOff + 32, true);
+    const localOff = dv.getUint32(cdOff + 42, true);
+    const name = dec.decode(bytes.slice(cdOff + 46, cdOff + 46 + nameLen));
+    const lhNameLen = dv.getUint16(localOff + 26, true);
+    const lhExtraLen = dv.getUint16(localOff + 28, true);
+    const dataOff = localOff + 30 + lhNameLen + lhExtraLen;
+    const data = bytes.slice(dataOff, dataOff + compSize);
+    reads.push({ name, method, data });
+    cdOff += 46 + nameLen + extraLen + commentLen;
+  }
+
+  return Promise.all(reads.map(async (r) => {
+    if (r.method === 0) return [r.name, dec.decode(r.data)];
+    // Browser's DecompressionStream supports 'deflate-raw'.
+    const stream = new Blob([r.data]).stream()
+      .pipeThrough(new DecompressionStream('deflate-raw'));
+    const ab = await new Response(stream).arrayBuffer();
+    return [r.name, dec.decode(new Uint8Array(ab))];
+  })).then(pairs => {
+    pairs.forEach(([n, x]) => { entries[n] = x; });
+    // First worksheet
+    const wsKey = Object.keys(entries).find(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k));
+    if (!wsKey) throw new Error('No worksheet found');
+    const sst = entries['xl/sharedStrings.xml'] || '';
+    const stringIndex = [];
+    if (sst) {
+      const re = /<si\b[\s\S]*?<\/si>/g;
+      let m;
+      while ((m = re.exec(sst))) {
+        // Concatenate every <t> inside this <si>
+        const piece = m[0];
+        const ts = [];
+        const tre = /<t[^>]*>([\s\S]*?)<\/t>/g;
+        let tm;
+        while ((tm = tre.exec(piece))) ts.push(tm[1]);
+        stringIndex.push(ts.join('').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>').replace(/&quot;/g, '"'));
+      }
+    }
+    const ws = entries[wsKey];
+    const rows = [];
+    const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g;
+    let rm;
+    while ((rm = rowRe.exec(ws))) {
+      const cells = [];
+      const cre = /<c\b([^>]*)\/?>([\s\S]*?)<\/c>|<c\b([^>]*)\/>/g;
+      let cm;
+      while ((cm = cre.exec(rm[1]))) {
+        const attrs = (cm[1] || cm[3] || '');
+        const inner = cm[2] || '';
+        const refMatch = attrs.match(/r="([A-Z]+)\d+"/);
+        const colLetters = refMatch ? refMatch[1] : '';
+        let col = 0;
+        for (let k = 0; k < colLetters.length; k++) col = col * 26 + (colLetters.charCodeAt(k) - 64);
+        col = col - 1; // zero-indexed
+        const tMatch = attrs.match(/\bt="([a-z]+)"/i);
+        const t = tMatch ? tMatch[1] : '';
+        let val = '';
+        if (t === 's') {
+          const v = (inner.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
+          val = v != null ? (stringIndex[parseInt(v, 10)] || '') : '';
+        } else if (t === 'inlineStr') {
+          const ts = []; const tre = /<t[^>]*>([\s\S]*?)<\/t>/g; let tm;
+          while ((tm = tre.exec(inner))) ts.push(tm[1]);
+          val = ts.join('').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+        } else {
+          val = (inner.match(/<v>([\s\S]*?)<\/v>/) || [])[1] || '';
+        }
+        while (cells.length < col) cells.push('');
+        cells.push(val);
+      }
+      rows.push(cells);
+    }
+    return rows;
+  });
+}
+
+function importInstructors(file) {
+  const isXlsx = file.name.toLowerCase().endsWith('.xlsx');
+  const ingest = (rows) => {
+    if (!rows.length) throw new Error('Empty file');
+    const headers = rows[0].map(h => (h || '').toString().trim().toLowerCase());
+    // Headers may be bilingual ("Name / الاسم"), so match by substring.
+    const findIdx = (...keys) => headers.findIndex(h =>
+      keys.some(k => h.includes(k.toLowerCase())));
+    const nameIdx = findIdx('name', 'instructor', 'الاسم');
+    const minIdx  = findIdx('min_load', 'minload', 'min', 'load', 'الحد');
+    let added = 0, skipped = 0;
+    mutate(() => {
+      rows.slice(1).forEach(cols => {
+        const name = ((cols[nameIdx >= 0 ? nameIdx : 0] || '') + '').trim();
+        if (!name) return;
+        if (State.instructors.some(i => i.name === name)) { skipped++; return; }
+        const minLoad = parseInt(cols[minIdx], 10) || 12;
+        State.instructors.push({ name, minLoad });
+        added++;
+      });
+    });
+    renderInstructors();
+    renderSchedule();
+    toast(`${t('imported')}: ${added}${skipped ? ` (${skipped} duplicates)` : ''}`, 'ok');
   };
-  reader.readAsText(file);
+
+  if (isXlsx) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const rows = await _xlsxRowsFromArrayBuffer(e.target.result);
+        ingest(rows);
+      } catch (err) { toast('Import failed: ' + err.message, 'bad'); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = String(e.target.result || '').replace(/^﻿/, '');
+      const sep = file.name.toLowerCase().endsWith('.tsv') ? '\t' : ',';
+      try { ingest(parseCSV(text, sep)); }
+      catch (err) { toast('Import failed: ' + err.message, 'bad'); }
+    };
+    reader.readAsText(file);
+  }
+}
+
+// Bilingual XLSX template with one example row. The headers match the
+// patterns importInstructors() recognises, so users can fill the file in
+// Excel and re-import without re-mapping columns.
+function downloadInstructorsTemplate() {
+  const rows = [
+    ['Name / الاسم', 'Min load / الحد الأدنى'],
+    ['Dr. Example', 12],
+    ['', ''],
+    ['', ''],
+    ['', ''],
+    ['', ''],
+    ['', ''],
+  ];
+  const bytes = buildWorkbook([{ name: 'Instructors', rows }]);
+  const blob = new Blob([bytes], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Instructors_Template.xlsx';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  toast(t('exported') + ' · Instructors_Template', 'ok');
 }
 
 function importFile(file) {
