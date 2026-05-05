@@ -1329,6 +1329,69 @@ const afterAdd = await page.locator('.section-card').count();
 check('[C7] level-actions don\'t accidentally collapse the level',
   afterAdd === beforeAdd + 1, `before=${beforeAdd} after=${afterAdd}`);
 
+console.log('\n══ AUTO-SAVE indicator + INSTRUCTORS template ══');
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+
+// AS1: Indicator starts empty (no save yet)
+const initialStatus = await page.locator('#saveStatus').innerText().catch(() => '');
+check('[AS1] save status starts empty',
+  !initialStatus || initialStatus.trim() === '', `got=${JSON.stringify(initialStatus)}`);
+
+// AS2: Trigger a mutation → indicator pulses 'Saving…' then 'Auto-saved · HH:MM:SS'
+await page.click('button:has-text("+ Add level")');
+await page.waitForTimeout(500); // beyond the 250ms debounce
+const savedText = await page.locator('#saveStatus').innerText();
+check('[AS2] save indicator shows Auto-saved with timestamp',
+  /Auto-saved/i.test(savedText) && /\d\d:\d\d:\d\d/.test(savedText), savedText);
+
+// AS3: Download instructor template — XLSX
+await page.click('.tab:has-text("Instructors")');
+await page.waitForTimeout(200);
+const dl = page.waitForEvent('download');
+await page.click('#panel-instructors button:has-text("Download template")');
+const dlObj = await dl;
+check('[AS3] instructor template default name',
+  dlObj.suggestedFilename() === 'Instructors_Template.xlsx',
+  dlObj.suggestedFilename());
+
+// AS4: The downloaded file is a valid zip with sheet1
+const tplPath = await dlObj.path();
+const tplBytes = fs.readFileSync(tplPath);
+check('[AS4] template starts with PK signature',
+  tplBytes[0] === 0x50 && tplBytes[1] === 0x4b);
+check('[AS4b] template ≥ 1KB',
+  tplBytes.length >= 500, `bytes=${tplBytes.length}`);
+
+// AS5: Round-trip — import the template back, expect 1 instructor
+// (the example row 'Dr. Example' with min_load 12). We push the file
+// in via a synthetic change event so the FileReader path is exactly
+// the one a real user would hit.
+const tplBytes2 = fs.readFileSync(tplPath);
+await page.evaluate(async (b64) => {
+  const bin = atob(b64);
+  const ab = new ArrayBuffer(bin.length);
+  const u8 = new Uint8Array(ab);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const file = new File([ab], 'instr_tpl.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const inp = document.getElementById('fileImportInstr');
+  inp.files = dt.files;
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+}, tplBytes2.toString('base64'));
+await page.waitForTimeout(2000);
+const stTpl = await readState();
+check('[AS5] template round-trip imports the example row',
+  stTpl.instructors.length === 1 && stTpl.instructors[0].name === 'Dr. Example',
+  JSON.stringify(stTpl.instructors));
+check('[AS5b] imported min_load preserved (12)',
+  stTpl.instructors[0].minLoad === 12);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');

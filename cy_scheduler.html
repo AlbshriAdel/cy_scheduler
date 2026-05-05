@@ -101,6 +101,24 @@
   }
   .toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+  /* Auto-save indicator */
+  .save-status {
+    font-size: 11px;
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: .04em;
+    color: var(--ink-faint);
+    padding: 4px 8px;
+    border-radius: 999px;
+    transition: opacity .4s, background .15s, color .15s;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .save-status.saving { color: var(--status-info); background: var(--status-info-bg); }
+  .save-status.saved  { color: var(--status-ok);   background: var(--status-ok-bg); }
+  .save-status.failed { color: var(--status-bad);  background: var(--status-bad-bg); }
+  .save-status.fading { opacity: .5; }
+  .save-status:empty  { display: none; }
+
   .btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 14px;
@@ -738,12 +756,13 @@
     </div>
   </div>
   <div class="toolbar-actions">
+    <span id="saveStatus" class="save-status" aria-live="polite"></span>
     <button class="btn btn-ghost btn-icon" id="btnUndo" title="Undo" aria-label="Undo">↶</button>
     <button class="btn btn-ghost btn-icon" id="btnRedo" title="Redo" aria-label="Redo">↷</button>
     <span style="width:1px; height:20px; background:var(--rule);"></span>
     <button class="btn" id="btnImport" data-i18n="import">Import</button>
     <input type="file" id="fileImport" accept=".csv,.tsv,.json" hidden />
-    <input type="file" id="fileImportInstr" accept=".csv,.tsv" hidden />
+    <input type="file" id="fileImportInstr" accept=".csv,.tsv,.xlsx" hidden />
     <div class="menu-wrap">
       <button class="btn" id="btnExport" data-i18n="export">Export ▾</button>
       <div class="menu" id="exportMenu" role="menu">
@@ -970,6 +989,10 @@ const I18N = {
     block_close: 'Close block (click to collapse)',
     expand: 'Expand',
     collapse: 'Collapse',
+    saving: 'Saving…',
+    saved_at: 'Auto-saved · {t}',
+    save_failed: 'Save failed',
+    instr_template: 'Download template',
     days_block: 'Day pattern',
     inherit: 'inherit',
     confirm_delete_section: 'Delete this section?',
@@ -1086,6 +1109,10 @@ const I18N = {
     block_close: 'إغلاق البلوك (انقر للطي)',
     expand: 'توسيع',
     collapse: 'طي',
+    saving: 'جاري الحفظ…',
+    saved_at: 'تم الحفظ تلقائياً · {t}',
+    save_failed: 'فشل الحفظ',
+    instr_template: 'تنزيل قالب',
     days_block: 'نمط الأيام',
     inherit: 'يرث',
     confirm_delete_section: 'حذف هذه الشعبة؟',
@@ -1212,7 +1239,11 @@ const Storage = {
         dismissedConflicts: State.dismissedConflicts,
       };
       localStorage.setItem(STORAGE_STATE, JSON.stringify(data));
-    } catch (e) { console.warn('save failed', e); }
+      flashSaveStatus('saved');
+    } catch (e) {
+      console.warn('save failed', e);
+      flashSaveStatus('failed');
+    }
   },
   loadSnapshots() {
     try {
@@ -1271,9 +1302,33 @@ function migrateV2(v2) {
 
 let saveTimer = null;
 const debouncedSave = () => {
+  flashSaveStatus('saving');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => Storage.saveState(), 250);
 };
+
+// Save-status indicator. Shows '⟳ Saving…' the moment a mutation lands,
+// then '✓ Saved · HH:MM:SS' after the debounced write commits, then fades.
+let _saveStatusTimer = null;
+function flashSaveStatus(kind) {
+  const el = document.getElementById('saveStatus');
+  if (!el) return;
+  clearTimeout(_saveStatusTimer);
+  if (kind === 'saving') {
+    el.textContent = '⟳ ' + t('saving');
+    el.className = 'save-status saving';
+  } else if (kind === 'saved') {
+    const ts = new Date().toTimeString().slice(0, 8);
+    el.textContent = '✓ ' + t('saved_at').replace('{t}', ts);
+    el.className = 'save-status saved';
+    _saveStatusTimer = setTimeout(() => {
+      el.className = 'save-status saved fading';
+    }, 2200);
+  } else {
+    el.textContent = '✕ ' + t('save_failed');
+    el.className = 'save-status failed';
+  }
+}
 
 // ====================================================================
 // HISTORY
@@ -2760,6 +2815,10 @@ function renderInstructors() {
     actions: [
       el('button', {
         class: 'btn',
+        onclick: () => downloadInstructorsTemplate(),
+      }, t('instr_template')),
+      el('button', {
+        class: 'btn',
         onclick: () => document.getElementById('fileImportInstr').click(),
       }, t('import_instr')),
     ],
@@ -3704,36 +3763,183 @@ function parseCSV(text, sep) {
 
 // Import instructors from a simple CSV/TSV: columns are name and (optional)
 // min_load. Headers are case-insensitive; both 'min_load' and 'minLoad' work.
-function importInstructors(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const text = String(e.target.result || '').replace(/^﻿/, '');
-    const sep = file.name.toLowerCase().endsWith('.tsv') ? '\t' : ',';
-    try {
-      const rows = parseCSV(text, sep);
-      if (!rows.length) throw new Error('Empty file');
-      const headers = rows[0].map(h => h.trim().toLowerCase());
-      const nameIdx = headers.findIndex(h => h === 'name' || h === 'instructor' || h === 'الاسم');
-      const minIdx  = headers.findIndex(h => h === 'min_load' || h === 'minload' || h === 'min' || h === 'الحد الأدنى');
-      let added = 0, skipped = 0;
-      mutate(() => {
-        rows.slice(1).forEach(cols => {
-          const name = (cols[nameIdx >= 0 ? nameIdx : 0] || '').trim();
-          if (!name) return;
-          if (State.instructors.some(i => i.name === name)) { skipped++; return; }
-          const minLoad = parseInt(cols[minIdx], 10) || 12;
-          State.instructors.push({ name, minLoad });
-          added++;
-        });
-      });
-      renderInstructors();
-      renderSchedule();
-      toast(`${t('imported')}: ${added}${skipped ? ` (${skipped} duplicates)` : ''}`, 'ok');
-    } catch (err) {
-      toast('Import failed: ' + err.message, 'bad');
+// Pull rows out of an XLSX worksheet as a 2-D array of strings, so the
+// downstream importer can treat XLSX and CSV identically. Handles both
+// inline strings and shared-string references; everything else is read
+// as a literal value attribute.
+function _xlsxRowsFromArrayBuffer(ab) {
+  const bytes = new Uint8Array(ab);
+  // Find every local file header (PK\3\4) and pluck the entry name + size.
+  // STORE method is straightforward; DEFLATE we run through the browser's
+  // DecompressionStream.
+  const dec = new TextDecoder();
+  const entries = {};
+  // EOCD scan from the tail
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= 0; i--) {
+    if (bytes[i] === 0x50 && bytes[i+1] === 0x4b && bytes[i+2] === 0x05 && bytes[i+3] === 0x06) {
+      eocd = i; break;
     }
+  }
+  if (eocd < 0) throw new Error('Not a zip');
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const totalEntries = dv.getUint16(eocd + 10, true);
+  let cdOff = dv.getUint32(eocd + 16, true);
+  const reads = [];
+  for (let i = 0; i < totalEntries; i++) {
+    const method = dv.getUint16(cdOff + 10, true);
+    const compSize = dv.getUint32(cdOff + 20, true);
+    const nameLen = dv.getUint16(cdOff + 28, true);
+    const extraLen = dv.getUint16(cdOff + 30, true);
+    const commentLen = dv.getUint16(cdOff + 32, true);
+    const localOff = dv.getUint32(cdOff + 42, true);
+    const name = dec.decode(bytes.slice(cdOff + 46, cdOff + 46 + nameLen));
+    const lhNameLen = dv.getUint16(localOff + 26, true);
+    const lhExtraLen = dv.getUint16(localOff + 28, true);
+    const dataOff = localOff + 30 + lhNameLen + lhExtraLen;
+    const data = bytes.slice(dataOff, dataOff + compSize);
+    reads.push({ name, method, data });
+    cdOff += 46 + nameLen + extraLen + commentLen;
+  }
+
+  return Promise.all(reads.map(async (r) => {
+    if (r.method === 0) return [r.name, dec.decode(r.data)];
+    // Browser's DecompressionStream supports 'deflate-raw'.
+    const stream = new Blob([r.data]).stream()
+      .pipeThrough(new DecompressionStream('deflate-raw'));
+    const ab = await new Response(stream).arrayBuffer();
+    return [r.name, dec.decode(new Uint8Array(ab))];
+  })).then(pairs => {
+    pairs.forEach(([n, x]) => { entries[n] = x; });
+    // First worksheet
+    const wsKey = Object.keys(entries).find(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k));
+    if (!wsKey) throw new Error('No worksheet found');
+    const sst = entries['xl/sharedStrings.xml'] || '';
+    const stringIndex = [];
+    if (sst) {
+      const re = /<si\b[\s\S]*?<\/si>/g;
+      let m;
+      while ((m = re.exec(sst))) {
+        // Concatenate every <t> inside this <si>
+        const piece = m[0];
+        const ts = [];
+        const tre = /<t[^>]*>([\s\S]*?)<\/t>/g;
+        let tm;
+        while ((tm = tre.exec(piece))) ts.push(tm[1]);
+        stringIndex.push(ts.join('').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>').replace(/&quot;/g, '"'));
+      }
+    }
+    const ws = entries[wsKey];
+    const rows = [];
+    const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g;
+    let rm;
+    while ((rm = rowRe.exec(ws))) {
+      const cells = [];
+      const cre = /<c\b([^>]*)\/?>([\s\S]*?)<\/c>|<c\b([^>]*)\/>/g;
+      let cm;
+      while ((cm = cre.exec(rm[1]))) {
+        const attrs = (cm[1] || cm[3] || '');
+        const inner = cm[2] || '';
+        const refMatch = attrs.match(/r="([A-Z]+)\d+"/);
+        const colLetters = refMatch ? refMatch[1] : '';
+        let col = 0;
+        for (let k = 0; k < colLetters.length; k++) col = col * 26 + (colLetters.charCodeAt(k) - 64);
+        col = col - 1; // zero-indexed
+        const tMatch = attrs.match(/\bt="([a-z]+)"/i);
+        const t = tMatch ? tMatch[1] : '';
+        let val = '';
+        if (t === 's') {
+          const v = (inner.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
+          val = v != null ? (stringIndex[parseInt(v, 10)] || '') : '';
+        } else if (t === 'inlineStr') {
+          const ts = []; const tre = /<t[^>]*>([\s\S]*?)<\/t>/g; let tm;
+          while ((tm = tre.exec(inner))) ts.push(tm[1]);
+          val = ts.join('').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+        } else {
+          val = (inner.match(/<v>([\s\S]*?)<\/v>/) || [])[1] || '';
+        }
+        while (cells.length < col) cells.push('');
+        cells.push(val);
+      }
+      rows.push(cells);
+    }
+    return rows;
+  });
+}
+
+function importInstructors(file) {
+  const isXlsx = file.name.toLowerCase().endsWith('.xlsx');
+  const ingest = (rows) => {
+    if (!rows.length) throw new Error('Empty file');
+    const headers = rows[0].map(h => (h || '').toString().trim().toLowerCase());
+    // Headers may be bilingual ("Name / الاسم"), so match by substring.
+    const findIdx = (...keys) => headers.findIndex(h =>
+      keys.some(k => h.includes(k.toLowerCase())));
+    const nameIdx = findIdx('name', 'instructor', 'الاسم');
+    const minIdx  = findIdx('min_load', 'minload', 'min', 'load', 'الحد');
+    let added = 0, skipped = 0;
+    mutate(() => {
+      rows.slice(1).forEach(cols => {
+        const name = ((cols[nameIdx >= 0 ? nameIdx : 0] || '') + '').trim();
+        if (!name) return;
+        if (State.instructors.some(i => i.name === name)) { skipped++; return; }
+        const minLoad = parseInt(cols[minIdx], 10) || 12;
+        State.instructors.push({ name, minLoad });
+        added++;
+      });
+    });
+    renderInstructors();
+    renderSchedule();
+    toast(`${t('imported')}: ${added}${skipped ? ` (${skipped} duplicates)` : ''}`, 'ok');
   };
-  reader.readAsText(file);
+
+  if (isXlsx) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const rows = await _xlsxRowsFromArrayBuffer(e.target.result);
+        ingest(rows);
+      } catch (err) { toast('Import failed: ' + err.message, 'bad'); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = String(e.target.result || '').replace(/^﻿/, '');
+      const sep = file.name.toLowerCase().endsWith('.tsv') ? '\t' : ',';
+      try { ingest(parseCSV(text, sep)); }
+      catch (err) { toast('Import failed: ' + err.message, 'bad'); }
+    };
+    reader.readAsText(file);
+  }
+}
+
+// Bilingual XLSX template with one example row. The headers match the
+// patterns importInstructors() recognises, so users can fill the file in
+// Excel and re-import without re-mapping columns.
+function downloadInstructorsTemplate() {
+  const rows = [
+    ['Name / الاسم', 'Min load / الحد الأدنى'],
+    ['Dr. Example', 12],
+    ['', ''],
+    ['', ''],
+    ['', ''],
+    ['', ''],
+    ['', ''],
+  ];
+  const bytes = buildWorkbook([{ name: 'Instructors', rows }]);
+  const blob = new Blob([bytes], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Instructors_Template.xlsx';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  toast(t('exported') + ' · Instructors_Template', 'ok');
 }
 
 function importFile(file) {
