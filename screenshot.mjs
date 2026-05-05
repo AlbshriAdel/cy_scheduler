@@ -7,18 +7,24 @@ const FILE = pathToFileURL(path.resolve('cy_scheduler.html')).href;
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1500, height: 900 } });
 await page.goto(FILE);
-await page.evaluate(() => localStorage.clear());
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'Level 3' }],
+    rows: [{
+      id: 'r1', levelId: 'L1', code: 'CECS-211', name: 'Programming',
+      type: 'lecture', credits: 3, days: 'M,W',
+      blocks: [
+        { id: 'b1', time: '0800-0920', instr: 'Dr. Alpha', room: 'R-101', days: '', type: '' },
+        { id: 'b2', time: '1100-1240', instr: 'Dr. Beta',  room: 'L-1',   days: 'U', type: 'lab' },
+      ],
+    }],
+    instructors: [{ name: 'Dr. Alpha', minLoad: 12 }, { name: 'Dr. Beta', minLoad: 12 }],
+    lang: 'en', dismissedConflicts: [],
+  }));
+});
 await page.reload();
 await page.waitForSelector('#panel-schedule.active');
-// Trigger a save so the indicator is visible
-await page.click('button:has-text("+ Add level")');
-await page.waitForTimeout(500);
-await page.screenshot({ path: '/tmp/cy_v10_autosave.png', fullPage: true, clip: { x: 0, y: 0, width: 1500, height: 200 } });
-
-// Now go to Instructors and capture the new template button
-await page.click('.tab:has-text("Instructors")');
 await page.waitForTimeout(300);
-await page.screenshot({ path: '/tmp/cy_v10_instructors.png', fullPage: true, clip: { x: 0, y: 0, width: 1500, height: 400 } });
-
+await page.screenshot({ path: '/tmp/cy_v11_perblock.png', fullPage: true });
 await browser.close();
-console.log('saved /tmp/cy_v10_*.png');
+console.log('saved /tmp/cy_v11_perblock.png');

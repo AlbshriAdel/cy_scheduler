@@ -761,7 +761,7 @@
     <button class="btn btn-ghost btn-icon" id="btnRedo" title="Redo" aria-label="Redo">↷</button>
     <span style="width:1px; height:20px; background:var(--rule);"></span>
     <button class="btn" id="btnImport" data-i18n="import">Import</button>
-    <input type="file" id="fileImport" accept=".csv,.tsv,.json" hidden />
+    <input type="file" id="fileImport" accept=".csv,.tsv,.json,.xlsx" hidden />
     <input type="file" id="fileImportInstr" accept=".csv,.tsv,.xlsx" hidden />
     <div class="menu-wrap">
       <button class="btn" id="btnExport" data-i18n="export">Export ▾</button>
@@ -994,6 +994,7 @@ const I18N = {
     save_failed: 'Save failed',
     instr_template: 'Download template',
     days_block: 'Day pattern',
+    type_block: 'Type override',
     inherit: 'inherit',
     confirm_delete_section: 'Delete this section?',
     confirm_delete_level: 'Delete this level and all its sections?',
@@ -1114,6 +1115,7 @@ const I18N = {
     save_failed: 'فشل الحفظ',
     instr_template: 'تنزيل قالب',
     days_block: 'نمط الأيام',
+    type_block: 'تجاوز النوع',
     inherit: 'يرث',
     confirm_delete_section: 'حذف هذه الشعبة؟',
     confirm_delete_level: 'حذف هذا المستوى وكل شعبه؟',
@@ -1433,10 +1435,15 @@ const findSlot = (type, code) => slotsFor(type).find(s => s.code === code) || nu
 const rangesOverlap = (a, b) => a.start < b.end && b.start < a.end;
 const expandDays = (s) => s ? s.split(',').map(x => x.trim()).filter(Boolean) : [];
 
-// Effective days for a block: block-level override first, falling back to
-// the section's days field. Empty string means "inherit".
+// Effective days / type for a block: block-level override first, falling
+// back to the section's value. Empty/undefined means "inherit". Letting
+// type vary per block means a single course row can hold both نظري and
+// عملي blocks side-by-side instead of being split into two rows.
 function effectiveDays(row, block) {
   return (block && block.days) ? block.days : row.days;
+}
+function effectiveType(row, block) {
+  return (block && block.type) ? block.type : row.type;
 }
 
 function buildSessions() {
@@ -1446,13 +1453,14 @@ function buildSessions() {
       const dayStr = effectiveDays(r, b);
       if (!dayStr) return;
       if (!b.time) return;
-      const slot = findSlot(r.type, b.time);
+      const blkType = effectiveType(r, b);
+      const slot = findSlot(blkType, b.time);
       if (!slot) return;
       expandDays(dayStr).forEach(day => {
         out.push({
           rowId: r.id, blockId: b.id, blockIdx: idx, day,
           start: slot.start, end: slot.end, slotCode: b.time,
-          levelId: r.levelId, type: r.type,
+          levelId: r.levelId, type: blkType,
           code: r.code, name: r.name, days: dayStr,
           instr: b.instr, room: b.room,
         });
@@ -2012,7 +2020,9 @@ function toggleLevelCollapse(levelId) {
 
 function blockSummaryText(section, block) {
   const days = effectiveDays(section, block) || '—';
-  const parts = [days, block.time || '—'];
+  const parts = [];
+  if (block.type) parts.push((TYPES.find(x => x.code === block.type) || {}).en || block.type);
+  parts.push(days, block.time || '—');
   if (block.instr) parts.push(block.instr);
   if (block.room) parts.push(block.room);
   return parts.join(' · ');
@@ -2066,6 +2076,7 @@ function renderBlock(section, block, idx, conflictBlocks) {
 
   if (!collapsed) {
     const grid = el('div', { class: 'row-grid' });
+    grid.appendChild(makeField(t('type_block'), blockTypeSelect(section, block)));
     grid.appendChild(makeField(t('days_block'), blockDaysSelect(section, block)));
     grid.appendChild(makeField(t('time'),       blockTimeSelect(section, block)));
     grid.appendChild(makeInstrField(block));
@@ -2101,7 +2112,7 @@ function makeInstrField(block) {
 function blockTimeSelect(section, block) {
   const sel = el('select', { class: 'field-select' });
   sel.appendChild(el('option', { value: '' }, '—'));
-  slotsFor(section.type).forEach(s => {
+  slotsFor(effectiveType(section, block)).forEach(s => {
     const opt = el('option', { value: s.code }, s.code);
     if (block.time === s.code) opt.selected = true;
     sel.appendChild(opt);
@@ -2109,6 +2120,34 @@ function blockTimeSelect(section, block) {
   sel.addEventListener('change', (e) => {
     mutate(() => { block.time = e.target.value; });
     refreshAfterEdit();
+  });
+  return sel;
+}
+
+// Per-block type dropdown. Empty value means "inherit from section",
+// which is the common case. Picking lab / online / lecture overrides
+// just for this block — useful when the same course row carries
+// نظري and عملي blocks side-by-side.
+function blockTypeSelect(section, block) {
+  const sel = el('select', { class: 'field-select' });
+  const inheritLabel = (TYPES.find(x => x.code === section.type) || {})[State.lang === 'ar' ? 'ar' : 'en'] || section.type;
+  sel.appendChild(el('option', { value: '' },
+    `(${t('inherit')} ${inheritLabel})`));
+  TYPES.forEach(typ => {
+    const opt = el('option', { value: typ.code }, State.lang === 'ar' ? typ.ar : typ.en);
+    if (block.type === typ.code) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', (e) => {
+    mutate(() => {
+      block.type = e.target.value;
+      // Clear time if it's not valid for the new effective type.
+      if (block.time && !findSlot(effectiveType(section, block), block.time)) {
+        block.time = '';
+      }
+    });
+    renderSchedule();
+    updateConflictBadge();
   });
   return sel;
 }
@@ -3942,34 +3981,108 @@ function downloadInstructorsTemplate() {
   toast(t('exported') + ' · Instructors_Template', 'ok');
 }
 
+// Recognise Arabic and English type words. Defaults to 'lecture'.
+function normalizeType(raw) {
+  const s = (raw || '').toString().trim().toLowerCase();
+  if (!s) return 'lecture';
+  if (s.includes('lab') || s.includes('عملي') || s.includes('practical')) return 'lab';
+  if (s.includes('online') || s.includes('بعد') || s.includes('عن بعد')) return 'online';
+  return 'lecture'; // 'نظري', 'lecture', 'theory'
+}
+
+// Convert XLSX rows (matching the Course_Schedule_Template layout) into
+// the wide-format objects csvToState expects. The template ships with:
+//   row 1: title         row 2: blank        row 3: BLOCK 1 / BLOCK 2
+//   row 4: column headers  (Level / Code / Name / Type / Cr / Days /
+//                           Time / Instructor / Room / Time / Instructor / Room)
+//   row 5+: data
+// We detect the header row by looking for a cell that mentions Level (or
+// المستوى) so the import isn't tied to a specific row index.
+function xlsxRowsToWideItems(rows) {
+  let headerIdx = rows.findIndex(r =>
+    r && r.some(c => /level|المستوى/i.test((c || '').toString())) &&
+         r.some(c => /code|الرمز/i.test((c || '').toString()))
+  );
+  if (headerIdx < 0) headerIdx = 3; // template default
+  const items = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    if (!r.length || !r.some(c => (c || '').toString().trim())) continue;
+    items.push({
+      level: (r[0] || '').toString(),
+      code:  (r[1] || '').toString(),
+      name:  (r[2] || '').toString(),
+      type:  normalizeType(r[3]),
+      credits: r[4] || 0,
+      days:  (r[5] || '').toString(),
+      block1_time:  (r[6]  || '').toString(),
+      block1_instr: (r[7]  || '').toString(),
+      block1_room:  (r[8]  || '').toString(),
+      block2_time:  (r[9]  || '').toString(),
+      block2_instr: (r[10] || '').toString(),
+      block2_room:  (r[11] || '').toString(),
+    });
+  }
+  return items;
+}
+
 function importFile(file) {
+  const lname = file.name.toLowerCase();
+
+  // ── XLSX path: read the bytes, parse via _xlsxRowsFromArrayBuffer,
+  // map the template's wide layout into items the existing csvToState
+  // can ingest. Same code path as CSV-wide so it round-trips cleanly.
+  if (lname.endsWith('.xlsx')) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const rows = await _xlsxRowsFromArrayBuffer(e.target.result);
+        const items = xlsxRowsToWideItems(rows);
+        if (!items.length) throw new Error('No data rows found');
+        const { levels, rows: parsedRows, instructors } = csvToState(items);
+        mutate(() => {
+          State.levels = levels;
+          State.rows = parsedRows;
+          State.instructors = instructors.length ? instructors : State.instructors;
+        });
+        render();
+        toast(`${t('imported')}: ${parsedRows.length}`, 'ok');
+      } catch (err) {
+        console.error(err);
+        toast('Import failed: ' + err.message, 'bad');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
+
+  // ── CSV / TSV / JSON path
   const reader = new FileReader();
   reader.onload = (e) => {
     const text = String(e.target.result || '').replace(/^﻿/, '');
     try {
       let levels, rows, instructors;
-      if (file.name.endsWith('.json')) {
+      if (lname.endsWith('.json')) {
         const data = JSON.parse(text);
         if (data.levels && data.rows) {
-          // v3 native
           levels = data.levels;
           rows = data.rows;
           instructors = data.instructors || [];
         } else if (Array.isArray(data) || data.rows) {
-          // legacy v2 b1/b2 — migrate
           const m = migrateV2(Array.isArray(data) ? { rows: data } : data);
           levels = m.levels; rows = m.rows; instructors = m.instructors;
         } else {
           throw new Error('Unrecognized JSON shape');
         }
       } else {
-        const sep = file.name.endsWith('.tsv') ? '\t' : ',';
+        const sep = lname.endsWith('.tsv') ? '\t' : ',';
         const parsed = parseCSV(text, sep);
         if (!parsed.length) throw new Error('Empty file');
         const headers = parsed[0].map(h => h.trim().toLowerCase());
         const items = parsed.slice(1).map(cols => {
           const obj = {};
           headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
+          if (obj.type) obj.type = normalizeType(obj.type);
           return obj;
         });
         ({ levels, rows, instructors } = csvToState(items));
