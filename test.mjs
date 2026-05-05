@@ -1018,7 +1018,9 @@ await page.click('button:has-text("+ Add level")'); await settle();
 await page.fill('.level-name-input', 'L-O');
 await page.click('.level-section button:has-text("+ Add section")'); await settle();
 const oSec = page.locator('.section-card').first();
-await oSec.locator('.field:has-text("Type") select').selectOption('online');
+// scope to the section's direct row-grid; block-level "Type override"
+// also lives inside the section-card subtree
+await oSec.locator('> .row-grid > .field:has-text("Type") select').selectOption('online');
 await settle();
 const onlineTimeOpts = await oSec.locator('.block').first()
   .locator('.field:has-text("Time") select option').allTextContents();
@@ -1391,6 +1393,144 @@ check('[AS5] template round-trip imports the example row',
   JSON.stringify(stTpl.instructors));
 check('[AS5b] imported min_load preserved (12)',
   stTpl.instructors[0].minLoad === 12);
+
+console.log('\n══ XLSX SCHEDULE IMPORT (Course_Schedule_Template format) ══');
+
+// X1: Round-trip — populate a schedule, export the XLSX, clear state,
+// import back. Counts and key fields must survive.
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'Level 3' }, { id: 'L2', name: 'Level 4' }],
+    rows: [
+      { id: 'r1', levelId: 'L1', code: 'CECS-211', name: 'Programming',
+        type: 'lecture', credits: 3, days: 'M,W',
+        blocks: [
+          { id: 'b1', time: '0800-0920', instr: 'Dr. Alpha', room: 'R-101', days: '' },
+          { id: 'b2', time: '0930-1050', instr: 'Dr. Beta',  room: 'R-102', days: '' },
+        ],
+      },
+      { id: 'r2', levelId: 'L2', code: 'CECS-282', name: 'Data Structures',
+        type: 'lecture', credits: 3, days: 'T,R',
+        blocks: [
+          { id: 'b3', time: '1100-1220', instr: 'Dr. Beta', room: 'R-201', days: '' },
+        ],
+      },
+    ],
+    instructors: [{ name: 'Dr. Alpha', minLoad: 12 }, { name: 'Dr. Beta', minLoad: 12 }],
+    lang: 'en', dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+// Take a snapshot so export is allowed
+await page.click('.tab:has-text("Versions")'); await settle();
+await page.fill('.snapshot-form input', 'pre-export');
+await page.click('.snapshot-form button:has-text("Save snapshot")'); await settle();
+// Export the XLSX
+await page.click('#btnExport');
+const dlX = page.waitForEvent('download');
+await page.click('.menu-item:has-text("Excel")');
+const xlsxDlX = await dlX;
+const xlsxPathX = await xlsxDlX.path();
+const xlsxBufX = fs.readFileSync(xlsxPathX);
+
+// Clear and import back via the in-page change event (deterministic for
+// the async XLSX path).
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.evaluate(async (b64) => {
+  const bin = atob(b64);
+  const ab = new ArrayBuffer(bin.length);
+  const u8 = new Uint8Array(ab);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const file = new File([ab], 'sched.xlsx',
+    { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const inp = document.getElementById('fileImport');
+  inp.files = dt.files;
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+}, xlsxBufX.toString('base64'));
+await page.waitForTimeout(2500);
+const stXlsx = await readState();
+check('[X1] xlsx schedule import → 2 sections',
+  stXlsx.rows.length === 2, `got=${stXlsx.rows.length}`);
+check('[X2] level names round-trip',
+  stXlsx.levels.map(l => l.name).sort().join(',') === 'Level 3,Level 4',
+  JSON.stringify(stXlsx.levels));
+const r1 = stXlsx.rows.find(r => r.code === 'CECS-211');
+check('[X3] section CECS-211 has 2 blocks after import',
+  r1 && r1.blocks.length === 2);
+check('[X4] block 1 time + instructor preserved',
+  r1.blocks[0].time === '0800-0920' && r1.blocks[0].instr === 'Dr. Alpha');
+check('[X5] block 2 instructor preserved',
+  r1.blocks[1].instr === 'Dr. Beta');
+
+// X6: Arabic types are normalised. Build a minimal CSV with Arabic types.
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+const arCSV = 'level,code,name,type,credits,days,time,instr,room\n' +
+              'الثالث,CECS-217,تنظيم,نظري,3,"M,W",0800-0920,Dr. K,R-1\n' +
+              'الثالث,CECS-217,تنظيم,عملي,1,U,0900-1040,Dr. L,R-2\n';
+const tmpAr = '/tmp/cy_ar.csv';
+fs.writeFileSync(tmpAr, arCSV);
+await page.evaluate(async (b64) => {
+  const bin = atob(b64);
+  const ab = new ArrayBuffer(bin.length);
+  const u8 = new Uint8Array(ab);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const file = new File([ab], 'ar.csv', { type: 'text/csv' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const inp = document.getElementById('fileImport');
+  inp.files = dt.files;
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+}, fs.readFileSync(tmpAr).toString('base64'));
+await page.waitForTimeout(1000);
+const stAr = await readState();
+const types = stAr.rows.map(r => r.type).sort();
+check('[X6] Arabic types نظري/عملي → lecture/lab',
+  JSON.stringify(types) === '["lab","lecture"]', JSON.stringify(types));
+
+console.log('\n══ PER-BLOCK TYPE override ══');
+
+// PT1: Block type override changes the time-slot pool. Default section is
+// lecture, so 0900-1040 (lab) is invalid. Switching the block's type
+// override to 'lab' makes the lab slot valid.
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'L1' }],
+    rows: [{
+      id: 'r1', levelId: 'L1', code: 'X', name: 'X',
+      type: 'lecture', credits: 3, days: 'M',
+      blocks: [
+        { id: 'b1', time: '0800-0920', instr: '', room: '', days: '', type: '' },
+        { id: 'b2', time: '0900-1040', instr: '', room: '', days: '', type: 'lab' },
+      ],
+    }],
+    instructors: [], lang: 'en', dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+await page.click('.tab:has-text("Grid")');
+await page.waitForTimeout(700);
+const ptOccupied = await page.locator('#panel-grid .grid-cell.busy, #panel-grid .grid-cell.conflict').count();
+check('[PT1] grid renders sessions for both blocks (incl. conflict)',
+  ptOccupied >= 2, `occupied cells=${ptOccupied}`);
+
+// PT2: Effective type 'lab' shows up in the block's collapsed summary
+await page.click('.tab:has-text("Schedule")'); await settle();
+// Collapse block 2 to inspect its summary
+await page.locator('.section-card .block .block-head.clickable').nth(1).click();
+await settle();
+const summaryPT = await page.locator('.section-card .block.collapsed .block-summary')
+  .first().textContent();
+check('[PT2] collapsed summary mentions Lab when type override is lab',
+  /lab/i.test(summaryPT), summaryPT);
 
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
