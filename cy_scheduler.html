@@ -517,6 +517,8 @@
   .toast.ok { background: var(--status-ok); }
   .toast.bad { background: var(--status-bad); }
   .toast.warn { background: var(--status-warn); }
+  .toast.info { background: var(--accent); }
+  #btnReset:hover { background: var(--status-bad-bg); color: var(--status-bad); }
   @keyframes toast-in {
     from { transform: translateY(8px); opacity: 0; }
     to   { transform: translateY(0); opacity: 1; }
@@ -759,6 +761,8 @@
     <span id="saveStatus" class="save-status" aria-live="polite"></span>
     <button class="btn btn-ghost btn-icon" id="btnUndo" title="Undo" aria-label="Undo">↶</button>
     <button class="btn btn-ghost btn-icon" id="btnRedo" title="Redo" aria-label="Redo">↷</button>
+    <button class="btn btn-ghost btn-icon" id="btnBackup" title="Save backup copy" aria-label="Save backup">💾</button>
+    <button class="btn btn-ghost btn-icon" id="btnReset"  title="Reset all stored data" aria-label="Reset storage">🗑</button>
     <span style="width:1px; height:20px; background:var(--rule);"></span>
     <button class="btn" id="btnImport" data-i18n="import">Import</button>
     <input type="file" id="fileImport" accept=".csv,.tsv,.json,.xlsx" hidden />
@@ -992,6 +996,13 @@ const I18N = {
     saving: 'Saving…',
     saved_at: 'Auto-saved · {t}',
     save_failed: 'Save failed',
+    backup_action: 'Save backup',
+    backup_done: 'Backup downloaded',
+    backup_tip: 'Tip — download a backup copy of your work',
+    reset_confirm_title: 'Reset all stored data?',
+    reset_confirm_body: 'This clears every level, section, instructor, snapshot, and setting from this browser. Cannot be undone (consider downloading a backup first).',
+    reset_action: 'Reset everything',
+    reset_done: 'Reset complete',
     instr_template: 'Download template',
     days_block: 'Day pattern',
     type_block: 'Type override',
@@ -1113,6 +1124,13 @@ const I18N = {
     saving: 'جاري الحفظ…',
     saved_at: 'تم الحفظ تلقائياً · {t}',
     save_failed: 'فشل الحفظ',
+    backup_action: 'حفظ نسخة احتياطية',
+    backup_done: 'تم تنزيل النسخة الاحتياطية',
+    backup_tip: 'تلميح — حمّل نسخة احتياطية من عملك',
+    reset_confirm_title: 'إعادة تعيين كل البيانات؟',
+    reset_confirm_body: 'سيمسح هذا كل المستويات والشعب والمدرسين والنسخ والإعدادات من هذا المتصفح. لا يمكن التراجع (يُفضّل تنزيل نسخة احتياطية أولاً).',
+    reset_action: 'إعادة تعيين كل شيء',
+    reset_done: 'تمت إعادة التعيين',
     instr_template: 'تنزيل قالب',
     days_block: 'نمط الأيام',
     type_block: 'تجاوز النوع',
@@ -1333,6 +1351,113 @@ function flashSaveStatus(kind) {
 }
 
 // ====================================================================
+// BACKUP & RESET
+// localStorage is durable enough for everyday use, but a clear-on-quit
+// browser, a wiped profile, or a swap between machines can wipe months
+// of work. The backup helper writes an offline JSON the user can stash
+// anywhere; a discreet reminder nudges (just once per session, never
+// pesters) once the user has accumulated meaningful changes.
+// ====================================================================
+
+let _mutationsSinceBackup = 0;
+let _backupOfferedThisSession = false;
+const BACKUP_OFFER_AFTER = 25; // mutations
+
+function _bumpBackupCounter() {
+  _mutationsSinceBackup++;
+  if (!_backupOfferedThisSession && _mutationsSinceBackup >= BACKUP_OFFER_AFTER) {
+    _backupOfferedThisSession = true;
+    _offerBackupReminder();
+  }
+}
+
+function downloadBackup() {
+  const payload = {
+    version: 'v3',
+    levels: State.levels,
+    rows: State.rows,
+    instructors: State.instructors,
+    snapshots: State.snapshots,
+    config: State.config,
+    dismissedConflicts: State.dismissedConflicts,
+    exportedAt: new Date().toISOString(),
+  };
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  download(`cy_schedule_backup_${stamp}.json`, JSON.stringify(payload, null, 2),
+    'application/json');
+  _mutationsSinceBackup = 0;
+  toast(t('backup_done'), 'ok');
+}
+
+function _offerBackupReminder() {
+  // Subtle, non-blocking. No modal, no alarm — just a longer-lived toast
+  // with an inline action button. Disappears on its own, never re-fires.
+  const stack = document.getElementById('toastStack');
+  const wrap = el('div', {
+    class: 'toast info',
+    style: 'display:flex; align-items:center; gap:12px; max-width:420px;',
+  }, '💾 ' + t('backup_tip'));
+  const btn = el('button', {
+    class: 'btn btn-sm',
+    style: 'background:rgba(255,255,255,.15); color:var(--paper); border-color:rgba(255,255,255,.3);',
+    onclick: () => { downloadBackup(); wrap.remove(); },
+  }, t('backup_action'));
+  const dismiss = el('button', {
+    class: 'btn btn-sm btn-ghost',
+    style: 'color:var(--paper); padding:4px 8px;',
+    onclick: () => wrap.remove(),
+    'aria-label': 'Dismiss',
+  }, '✕');
+  wrap.appendChild(btn);
+  wrap.appendChild(dismiss);
+  stack.appendChild(wrap);
+  // Auto-dismiss after 12 seconds even if ignored.
+  setTimeout(() => {
+    if (wrap.isConnected) {
+      wrap.style.transition = 'opacity .25s';
+      wrap.style.opacity = '0';
+      setTimeout(() => wrap.remove(), 260);
+    }
+  }, 12000);
+}
+
+function confirmResetStorage() {
+  modal({
+    title: t('reset_confirm_title'),
+    body: el('div', { style: 'font-size:13px; color:var(--ink-soft);' },
+      t('reset_confirm_body')),
+    confirmLabel: t('reset_action'),
+    danger: true,
+    onConfirm: () => {
+      try {
+        localStorage.removeItem(STORAGE_STATE);
+        localStorage.removeItem(STORAGE_SNAPS);
+        localStorage.removeItem(LEGACY_STATE);
+        localStorage.removeItem(LEGACY_SNAPS);
+      } catch (e) {}
+      State.levels = [];
+      State.rows = [];
+      State.instructors = [];
+      State.snapshots = [];
+      State.dismissedConflicts = [];
+      State.history.length = 0;
+      State.future.length = 0;
+      _collapsedBlocks.clear?.();
+      _collapsedSections.clear?.();
+      _collapsedLevels.clear?.();
+      State.config.dayPatterns = DEFAULT_DAY_PATTERNS.map(p => ({ ...p }));
+      State.config.lectureSlots = DEFAULT_LECTURE_SLOTS.map(s => ({ ...s }));
+      State.config.labSlots = DEFAULT_LAB_SLOTS.map(s => ({ ...s }));
+      State.config.onlineSlots = DEFAULT_ONLINE_SLOTS.map(s => ({ ...s }));
+      _mutationsSinceBackup = 0;
+      _backupOfferedThisSession = false;
+      render();
+      toast(t('reset_done'), 'ok');
+    },
+  });
+}
+
+// ====================================================================
 // HISTORY
 // ====================================================================
 
@@ -1410,6 +1535,7 @@ function mutate(fn) {
   fn();
   debouncedSave();
   updateGate();
+  _bumpBackupCounter();
 }
 
 let coalesceTimer = null;
@@ -3620,8 +3746,6 @@ function _b64ToBytes(b64) {
 // row pattern to keep it simple and readable.
 function _buildSheet1Xml(prefix, suffix) {
   const lines = [];
-  // Group rows by level, preserving the order of State.levels then any
-  // orphan rows (no level) at the end.
   const groups = [];
   State.levels.forEach(lv => {
     const inLv = State.rows.filter(r => r.levelId === lv.id);
@@ -3630,7 +3754,9 @@ function _buildSheet1Xml(prefix, suffix) {
   const orphans = State.rows.filter(r => !State.levels.some(l => l.id === r.levelId));
   if (orphans.length) groups.push({ level: { name: '' }, rows: orphans });
 
-  // Style patterns (row 5/6/7/8 from the template)
+  // Style patterns from the template (rows 5/6/7/8). 12 entries cover
+  // the bilingual styled columns A–L; columns M–P (the round-trip
+  // metadata) reuse the rightmost 'L' style so they blend in visually.
   const STYLE_TOP_ODD  = [9,10,11,10,10,12,13,14,10,15,14,10];
   const STYLE_EVEN     = [9,17,18,17,17,19,20,21,17,22,21,17];
   const STYLE_MID_ODD  = [9,10,11,10,10,16,23,14,10,15,14,10];
@@ -3638,7 +3764,6 @@ function _buildSheet1Xml(prefix, suffix) {
   let rNum = 5;
   const merges = ['A1:L1', 'A2:L2', 'G3:I3', 'J3:L3'];
 
-  // Cell renderer
   const cellXml = (col, row, sIdx, value, isNum) => {
     const ref = colLetter(col + 1) + row;
     if (value === '' || value == null) return `<c r="${ref}" s="${sIdx}"/>`;
@@ -3652,11 +3777,11 @@ function _buildSheet1Xml(prefix, suffix) {
     const lvName = g.level.name || '';
     const startRow = rNum;
     g.rows.forEach((r, idx) => {
-      const b1 = r.blocks[0] || { time:'', instr:'', room:'' };
-      const b2 = r.blocks[1] || { time:'', instr:'', room:'' };
+      const b1 = r.blocks[0] || { time:'', instr:'', room:'', type:'', days:'' };
+      const b2 = r.blocks[1] || { time:'', instr:'', room:'', type:'', days:'' };
       const typeLabel = (TYPES.find(t => t.code === r.type) || {}).en || r.type;
       const cells = [
-        idx === 0 ? lvName : '',  // A (level name only on first row of group)
+        idx === 0 ? lvName : '',  // A
         r.code || '',             // B
         r.name || '',             // C
         typeLabel,                // D
@@ -3668,34 +3793,40 @@ function _buildSheet1Xml(prefix, suffix) {
         b2.time || '',            // J
         b2.instr || '',           // K
         b2.room || '',            // L
+        // Round-trip metadata columns. Empty when the block inherits.
+        b1.type  || '',           // M  B1 Type override
+        b1.days  || '',           // N  B1 Days override
+        b2.type  || '',           // O  B2 Type override
+        b2.days  || '',           // P  B2 Days override
       ];
-      // Pick style pattern: idx=0 → TOP_ODD, even idx → EVEN, odd → MID_ODD
       const styles = idx === 0 ? STYLE_TOP_ODD : (idx % 2 === 1 ? STYLE_EVEN : STYLE_MID_ODD);
-      let row = `<row r="${rNum}" spans="1:12" x14ac:dyDescent="0.2">`;
+      let row = `<row r="${rNum}" spans="1:16" x14ac:dyDescent="0.2">`;
       for (let c = 0; c < 12; c++) {
         row += cellXml(c, rNum, styles[c], cells[c], c === 4);
+      }
+      // M–P share the rightmost styled cell (L = styles[11]).
+      for (let c = 12; c < 16; c++) {
+        if (cells[c] !== '' && cells[c] != null) {
+          row += cellXml(c, rNum, styles[11], cells[c], false);
+        }
       }
       row += '</row>';
       lines.push(row);
       rNum++;
     });
-    // Merge the level name down the group
     if (g.rows.length > 1 && lvName) {
       merges.push(`A${startRow}:A${startRow + g.rows.length - 1}`);
     }
   });
 
   const lastRow = Math.max(rNum - 1, 4);
-  // Find and replace the dimension reference in the prefix
-  const newPrefix = prefix.replace(/<dimension ref="A1:L\d+"\/>/, `<dimension ref="A1:L${lastRow}"/>`);
+  // Extend the dimension to cover the metadata columns.
+  const newPrefix = prefix.replace(/<dimension ref="A1:L\d+"\/>/, `<dimension ref="A1:P${lastRow}"/>`);
 
-  // Compose suffix: <mergeCells>...</mergeCells><pageMargins .../></worksheet>
   const mergeCellsXml =
     `<mergeCells count="${merges.length}">` +
     merges.map(m => `<mergeCell ref="${m}"/>`).join('') +
     `</mergeCells>`;
-  // Strip any existing mergeCells/conditionalFormatting from suffix; keep
-  // only pageMargins through </worksheet>.
   let cleanSuffix = suffix;
   cleanSuffix = cleanSuffix.replace(/<mergeCells[\s\S]*?<\/mergeCells>/, '');
   cleanSuffix = cleanSuffix.replace(/<conditionalFormatting[\s\S]*?<\/conditionalFormatting>/g, '');
@@ -4021,6 +4152,11 @@ function xlsxRowsToWideItems(rows) {
       block2_time:  (r[9]  || '').toString(),
       block2_instr: (r[10] || '').toString(),
       block2_room:  (r[11] || '').toString(),
+      // Round-trip metadata (columns M–P). Empty means inherit.
+      block1_type:  r[12] ? normalizeType(r[12]) : '',
+      block1_days:  (r[13] || '').toString(),
+      block2_type:  r[14] ? normalizeType(r[14]) : '',
+      block2_days:  (r[15] || '').toString(),
     });
   }
   return items;
@@ -4117,6 +4253,8 @@ function csvToState(items) {
   };
 
   // Detect wide format: any block1_time / block_1_time style header.
+  // (block_N_type / block_N_days are optional round-trip metadata, so
+  // we don't require them to detect wide format.)
   const sample = items[0] || {};
   const isWide = Object.keys(sample).some(k => /^block\s*_?\s*\d+_(time|instr|room)$/.test(k));
 
@@ -4124,18 +4262,19 @@ function csvToState(items) {
     const rows = items.map(it => {
       const lv = ensureLevel(it.level || '');
       const blocks = [];
-      // Find block indices present
       const indices = new Set();
       Object.keys(it).forEach(k => {
-        const m = k.match(/^block\s*_?\s*(\d+)_(time|instr|room)$/);
+        const m = k.match(/^block\s*_?\s*(\d+)_(time|instr|room|type|days)$/);
         if (m) indices.add(parseInt(m[1], 10));
       });
       Array.from(indices).sort((a, b) => a - b).forEach(i => {
         const time  = it[`block${i}_time`]  || '';
         const instr = it[`block${i}_instr`] || '';
         const room  = it[`block${i}_room`]  || '';
-        if (time || instr || room) {
-          blocks.push({ id: newId('bk'), time, instr, room });
+        const type  = it[`block${i}_type`]  || '';
+        const days  = it[`block${i}_days`]  || '';
+        if (time || instr || room || type || days) {
+          blocks.push({ id: newId('bk'), time, instr, room, type, days });
         }
       });
       if (blocks.length === 0) blocks.push(newBlock());
@@ -4269,6 +4408,8 @@ function init() {
     });
   });
   document.getElementById('dirtyGoSnap').addEventListener('click', () => setTab('versions'));
+  document.getElementById('btnBackup').addEventListener('click', downloadBackup);
+  document.getElementById('btnReset').addEventListener('click', confirmResetStorage);
   document.getElementById('btnUndo').addEventListener('click', () => {
     if (History.undo()) { render(); debouncedSave(); }
   });
