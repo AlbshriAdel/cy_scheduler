@@ -1532,6 +1532,110 @@ const summaryPT = await page.locator('.section-card .block.collapsed .block-summ
 check('[PT2] collapsed summary mentions Lab when type override is lab',
   /lab/i.test(summaryPT), summaryPT);
 
+console.log('\n══ XLSX ROUND-TRIP preserves block-level overrides ══');
+
+// RT1: Seed a section where Block 1 inherits and Block 2 overrides
+// type='lab' + days='U'. Export → wipe → import → overrides survive.
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'Level 3' }],
+    rows: [{
+      id: 'r1', levelId: 'L1', code: 'CECS-211', name: 'Programming',
+      type: 'lecture', credits: 3, days: 'M,W',
+      blocks: [
+        { id: 'b1', time: '0800-0920', instr: 'Dr. K', room: 'R-101', days: '', type: '' },
+        { id: 'b2', time: '1100-1240', instr: 'Dr. L', room: 'L-1',   days: 'U', type: 'lab' },
+      ],
+    }],
+    instructors: [{ name: 'Dr. K', minLoad: 12 }, { name: 'Dr. L', minLoad: 12 }],
+    lang: 'en', dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('.tab:has-text("Versions")'); await settle();
+await page.fill('.snapshot-form input', 'rt-export');
+await page.click('.snapshot-form button:has-text("Save snapshot")'); await settle();
+await page.click('#btnExport');
+const dlRT = page.waitForEvent('download');
+await page.click('.menu-item:has-text("Excel")');
+const rtDl = await dlRT;
+const rtPath = await rtDl.path();
+const rtBytes = fs.readFileSync(rtPath);
+
+// Import back
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.evaluate(async (b64) => {
+  const bin = atob(b64);
+  const ab = new ArrayBuffer(bin.length);
+  const u8 = new Uint8Array(ab);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const file = new File([ab], 'rt.xlsx',
+    { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const inp = document.getElementById('fileImport');
+  inp.files = dt.files;
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+}, rtBytes.toString('base64'));
+await page.waitForTimeout(2500);
+
+const rtSt = await readState();
+check('[RT1] one section round-tripped',
+  rtSt.rows.length === 1 && rtSt.rows[0].code === 'CECS-211',
+  JSON.stringify(rtSt.rows.map(r => r.code)));
+const rtRow = rtSt.rows[0];
+check('[RT2] block 1 inherits (no overrides set)',
+  rtRow.blocks[0].type === '' && rtRow.blocks[0].days === '',
+  JSON.stringify(rtRow.blocks[0]));
+check('[RT3] block 2 type override "lab" preserved',
+  rtRow.blocks[1].type === 'lab', JSON.stringify(rtRow.blocks[1]));
+check('[RT4] block 2 days override "U" preserved',
+  rtRow.blocks[1].days === 'U', JSON.stringify(rtRow.blocks[1]));
+check('[RT5] block 2 time/instructor/room preserved',
+  rtRow.blocks[1].time === '1100-1240' &&
+  rtRow.blocks[1].instr === 'Dr. L' &&
+  rtRow.blocks[1].room === 'L-1');
+
+console.log('\n══ BACKUP + RESET STORAGE ══');
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+
+// BR1: Backup button is present in toolbar
+check('[BR1] backup button present', (await page.locator('#btnBackup').count()) === 1);
+check('[BR2] reset  button present', (await page.locator('#btnReset').count())  === 1);
+
+// BR3: Click backup → downloads JSON file
+await page.click('button:has-text("+ Add level")'); await settle();
+const dlBR = page.waitForEvent('download');
+await page.click('#btnBackup');
+const dBR = await dlBR;
+const bname = dBR.suggestedFilename();
+check('[BR3] backup filename starts with cy_schedule_backup',
+  /^cy_schedule_backup_/.test(bname), bname);
+const bbytes = fs.readFileSync(await dBR.path(), 'utf8').replace(/^﻿/, '');
+const bjson = JSON.parse(bbytes);
+check('[BR4] backup JSON contains levels & rows arrays',
+  Array.isArray(bjson.levels) && Array.isArray(bjson.rows));
+check('[BR5] backup JSON includes config + dismissedConflicts + snapshots',
+  Array.isArray(bjson.snapshots) && bjson.config && Array.isArray(bjson.dismissedConflicts));
+
+// BR6: Reset button clears everything
+await page.click('#btnReset');
+// Modal opens
+check('[BR6] reset modal appears',
+  await page.isVisible('.modal:has-text("Reset all stored data")'));
+await page.click('.modal-foot button.btn-danger');
+await settle();
+const stAfterReset = await readState();
+check('[BR7] storage cleared after reset',
+  !stAfterReset || (stAfterReset.levels.length === 0 && stAfterReset.rows.length === 0),
+  JSON.stringify(stAfterReset));
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');
