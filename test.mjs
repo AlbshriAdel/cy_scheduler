@@ -1734,6 +1734,72 @@ const allItems = await page.locator('#printMenu .menu-item').allTextContents();
 check('[IS4] print menu lists "Print all instructor schedules"',
   allItems.some(t => /Print all instructor/i.test(t)), allItems.join('|'));
 
+console.log('\n══ PUNCTUATION-TOLERANT INSTRUCTOR matching (د.عادل / د. عادل) ══');
+
+// PT-INSTR1: Three forms of the same Arabic name in different rows
+// — one in the instructors registry, two more spelled differently in
+// blocks. The dropdown must surface ONE option, and selecting it must
+// match every session.
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'L1' }],
+    rows: [
+      { id: 'r1', levelId: 'L1', code: 'A', name: 'A', type: 'lecture',
+        credits: 3, days: 'M',
+        blocks: [{ id: 'b1', time: '0800-0920', instr: 'د.عادل البشري', room: 'R1', days: '', type: '' }] },
+      { id: 'r2', levelId: 'L1', code: 'B', name: 'B', type: 'lecture',
+        credits: 3, days: 'W',
+        blocks: [{ id: 'b2', time: '0800-0920', instr: 'د. عادل البشري', room: 'R2', days: '', type: '' }] },
+      { id: 'r3', levelId: 'L1', code: 'C', name: 'C', type: 'lab',
+        credits: 1, days: 'T',
+        blocks: [{ id: 'b3', time: '0900-1040', instr: 'د .عادل البشري ', room: 'R3', days: '', type: '' }] },
+    ],
+    instructors: [{ name: 'د.عادل البشري', minLoad: 12 }],
+    lang: 'en', dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+await page.click('.tab:has-text("Grid")');
+await settle();
+
+// PT-INSTR1: Dropdown lists exactly ONE entry for the three variants
+const adelOpts = await page.locator('#fInstr option').allTextContents();
+const adelEntries = adelOpts.filter(o => /عادل/.test(o));
+check('[PT-INSTR1] dropdown collapses 3 punctuation variants → 1 option',
+  adelEntries.length === 1, JSON.stringify(adelEntries));
+
+// PT-INSTR2: Selecting the dropdown matches every variant in rows
+await page.selectOption('#fInstr', adelEntries[0]);
+await settle();
+const occupied = await page.locator('#panel-grid .grid-cell.busy, #panel-grid .grid-cell.conflict').count();
+check('[PT-INSTR2] all 3 sessions render (busy or conflict)',
+  occupied >= 3, `cells=${occupied}`);
+
+// PT-INSTR3: R6 fires across the variants on Mon (r1.b1 + r2.b2 same time?
+// Actually r1 is on M and r2 is on W so no clash — verify NO false conflict).
+await page.click('.tab:has-text("Conflicts")');
+await settle();
+const r6Count = await page.locator('.issue:has-text("R6")').count();
+check('[PT-INSTR3] no spurious R6 across non-overlapping days',
+  r6Count === 0, `R6 count=${r6Count}`);
+
+// PT-INSTR4: Now make r1.b1 and r2.b2 share the same day → same instr +
+// same time + same day = R6 expected, and the variants must collide.
+await page.evaluate(() => {
+  const s = JSON.parse(localStorage.getItem('cy_sched_state_v3'));
+  s.rows[1].days = 'M'; // both on Monday now
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify(s));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('.tab:has-text("Conflicts")');
+await settle();
+const r6Now = await page.locator('.issue:has-text("R6")').count();
+check('[PT-INSTR4] R6 fires across punctuation variants when day matches',
+  r6Now >= 1, `R6 count=${r6Now}`);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');

@@ -1681,10 +1681,12 @@ function detectConflicts() {
           tipB: `R5 ${a.day}: same course, also has ${aKindA} at this time`,
         });
       }
-      // R6: instructor double-book — only flagged when both blocks are non-online.
-      // Compare normalised forms so stray whitespace doesn't hide a clash.
+      // R6: instructor double-book — only flagged when both blocks are
+      // non-online. Use instrKey for the match (whitespace + punctuation
+      // tolerant) but the cleaned display form for the message.
       const aN = normInstr(a.instr), bN = normInstr(b.instr);
-      if (aN && aN === bN && a.type !== 'online' && b.type !== 'online') {
+      const aIK = instrKey(a.instr), bIK = instrKey(b.instr);
+      if (aIK && aIK === bIK && a.type !== 'online' && b.type !== 'online') {
         allIssues.push({
           rule: 'R6', day: a.day, a: aKey, b: bKey,
           reason: `Instructor "${aN}" is double-booked.`,
@@ -1900,28 +1902,40 @@ function renderPanelHeader({ title, sub, actions }) {
 // SCHEDULE
 // ====================================================================
 
-// Whitespace-tolerant key for matching instructor names. Imported XLSX
-// values can carry trailing/leading spaces, double spaces, or zero-width
-// joiner characters that break strict equality.
+// Two-tier name normalisation:
+//   normInstr  → display form: NFC, no zero-width / bidi marks, single
+//                spaces, trimmed.
+//   instrKey   → match key: all whitespace, dots, and Arabic tatweel
+//                stripped. Matches 'د.عادل البشري', 'د. عادل البشري',
+//                'د .عادل البشري', and 'د.عادل البشري' (with NFD code
+//                points) as the SAME instructor. Punctuation differences
+//                in imported data are common.
 function normInstr(s) {
   return (s || '').toString()
-    .replace(/[​-‏‪-‮⁠﻿]/g, '') // zero-width / bidi
+    .normalize('NFC')
+    .replace(/[​-‏‪-‮⁠﻿]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
+function instrKey(s) {
+  return normInstr(s)
+    .replace(/[\s.ـ]/g, ''); // whitespace, dot, tatweel
+}
 
 function instructorOptions() {
-  // Collect unique normalised names; also dedupe so two near-identical
-  // imported names ('Dr. K' vs 'Dr. K ') don't both appear.
-  const seen = new Set();
-  const out = [];
+  // Dedupe by instrKey (whitespace + dot insensitive) so 'Dr. K' and
+  // 'Dr. K ' and 'د.عادل' and 'د. عادل' collapse into one option. The
+  // FIRST raw form encountered is used as the displayed value.
+  const seen = new Map(); // key → display
   const add = (n) => {
-    const k = normInstr(n);
-    if (k && !seen.has(k)) { seen.add(k); out.push(k); }
+    const display = normInstr(n);
+    if (!display) return;
+    const key = instrKey(display);
+    if (!seen.has(key)) seen.set(key, display);
   };
   State.instructors.forEach(i => add(i.name));
   State.rows.forEach(r => r.blocks.forEach(b => add(b.instr)));
-  return out;
+  return Array.from(seen.values());
 }
 
 function renderSchedule() {
@@ -2287,7 +2301,7 @@ function makeInstrField(block) {
     title: t('view_week'),
     onclick: () => {
       const name = sel.value || '';
-      State.gridFilters.instr = name;
+      State.gridFilters.instr = normInstr(name);
       setTab('grid');
     },
   }, '📅');
@@ -2711,10 +2725,16 @@ function renderGrid() {
   const buildSelect = (id, options, label, selected) => {
     const sel = el('select', { id });
     sel.appendChild(el('option', { value: '' }, t('grid_all')));
+    // Selected matching: instr uses instrKey (whitespace + dot tolerant);
+    // others compare on trimmed form so 'M,W' === 'M,W ' lands too.
+    const isMatch = (o) => {
+      if (label === 'instr') return instrKey(o) === instrKey(selected);
+      return (o || '').toString().trim() === (selected || '').toString().trim();
+    };
     options.forEach(o => {
       const opt = el('option', { value: o },
         (label === 'type' ? (TYPES.find(tx => tx.code === o) || {})[State.lang === 'ar' ? 'ar' : 'en'] || o : o));
-      if (o === selected) opt.selected = true;
+      if (selected && isMatch(o)) opt.selected = true;
       sel.appendChild(opt);
     });
     return sel;
@@ -2748,7 +2768,9 @@ function renderGrid() {
   const matches = (s) => {
     // Whitespace-tolerant match for instructor (imported names often
     // carry stray spaces or zero-width chars).
-    if (filters.instr && normInstr(s.instr) !== normInstr(filters.instr)) return false;
+    // Whitespace + punctuation tolerant: instrKey ignores spaces, dots,
+    // and tatweel so dropdown selection always matches the raw value.
+    if (filters.instr && instrKey(s.instr) !== instrKey(filters.instr)) return false;
     if (filters.level) {
       const lv = State.levels.find(l => l.id === s.levelId);
       if (!lv || lv.name.trim() !== filters.level.trim()) return false;
@@ -3152,7 +3174,7 @@ function renderInstructors() {
           class: 'btn btn-ghost btn-sm',
           title: t('view_instr_week'),
           onclick: () => {
-            State.gridFilters.instr = inst.name;
+            State.gridFilters.instr = normInstr(inst.name);
             setTab('grid');
           },
         }, '📅 ' + t('view_week_short')),
