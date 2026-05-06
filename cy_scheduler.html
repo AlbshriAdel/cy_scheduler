@@ -519,6 +519,33 @@
   .toast.warn { background: var(--status-warn); }
   .toast.info { background: var(--accent); }
   #btnReset:hover { background: var(--status-bad-bg); color: var(--status-bad); }
+
+  /* Off-screen container used by 'Print all instructor schedules'.
+     Visible only during print, with one A4 page per instructor. */
+  .print-all-instr { display: none; }
+  body.printing-all-instr .print-all-instr { display: block; }
+  .instr-page { padding: 12px; }
+  .instr-page-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    margin: 0 0 4px 0;
+    color: var(--ink);
+  }
+  .instr-page-meta {
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-family: 'Geist Mono', monospace;
+    margin-bottom: 10px;
+  }
+  @media print {
+    body.printing-all-instr > *:not(.print-all-instr) { display: none !important; }
+    body.printing-all-instr .print-all-instr { display: block; }
+    body.printing-all-instr .instr-page {
+      page-break-after: always;
+      padding: 0;
+    }
+    body.printing-all-instr .instr-page:last-child { page-break-after: auto; }
+  }
   @keyframes toast-in {
     from { transform: translateY(8px); opacity: 0; }
     to   { transform: translateY(0); opacity: 1; }
@@ -784,6 +811,7 @@
       <div class="menu" id="printMenu" role="menu">
         <button class="menu-item" data-print="active" data-i18n="print">Print</button>
         <button class="menu-item" data-print="grid" data-i18n="print_grid">Print grid</button>
+        <button class="menu-item" data-print="all-instr" data-i18n="print_all_instr">Print all instructor schedules</button>
       </div>
     </div>
     <button class="btn" id="btnLang" title="Toggle language">EN / ع</button>
@@ -981,7 +1009,11 @@ const I18N = {
     print_grid: 'Print grid',
     print_instr: 'Print this instructor\'s schedule',
     print_instr_tip: 'Print just the filtered weekly view for this instructor',
+    print_all_instr: 'Print all instructor schedules',
     clear_filter: 'Clear filter',
+    view_instr_week: 'View this instructor\'s weekly schedule',
+    view_week_short: 'Schedule',
+    no_instr_sessions: 'No instructor has any assigned sessions yet.',
     empty_schedule_title: 'No levels yet',
     empty_schedule_sub: 'Start by adding an academic level.',
     empty_level_sub: 'No sections in this level yet.',
@@ -1112,7 +1144,11 @@ const I18N = {
     print_grid: 'طباعة الشبكة',
     print_instr: 'طباعة جدول هذا المدرس',
     print_instr_tip: 'طباعة عرض الأسبوع المُصفّى لهذا المدرس',
+    print_all_instr: 'طباعة جداول كل المدرسين',
     clear_filter: 'مسح المُصفّي',
+    view_instr_week: 'عرض الجدول الأسبوعي لهذا المدرس',
+    view_week_short: 'الجدول',
+    no_instr_sessions: 'لا يوجد لأي مدرس جلسات مسندة بعد.',
     empty_schedule_title: 'لا توجد مستويات بعد',
     empty_schedule_sub: 'ابدأ بإضافة مستوى أكاديمي.',
     empty_level_sub: 'لا توجد شعب في هذا المستوى بعد.',
@@ -3111,7 +3147,15 @@ function renderInstructors() {
           el('div', { class: 'load-bar-fill ' + fill, style: `width:${Math.min(100, pct)}%;` }),
         ),
       ),
-      el('td', {},
+      el('td', { style: 'white-space:nowrap;' },
+        el('button', {
+          class: 'btn btn-ghost btn-sm',
+          title: t('view_instr_week'),
+          onclick: () => {
+            State.gridFilters.instr = inst.name;
+            setTab('grid');
+          },
+        }, '📅 ' + t('view_week_short')),
         el('button', { class: 'btn btn-ghost btn-icon', title: t('delete'),
           onclick: () => removeInstructor(inst.name) }, '✕'),
       ),
@@ -3888,6 +3932,86 @@ function _buildSheet1Xml(prefix, suffix) {
   return newPrefix + lines.join('') + '</sheetData>' + mergeCellsXml + cleanSuffix.replace(/^<\/sheetData>/, '');
 }
 
+// Print one weekly grid per instructor in a single print job. Builds an
+// off-screen container that's only displayed via @media print, then
+// triggers window.print(). Page-break-after on each instructor block
+// gives the operator one A4 sheet per faculty member.
+function printAllInstructorSchedules() {
+  if (isDirty()) { toast(t('blocked_print'), 'warn'); return; }
+  const sessions = buildSessions();
+  // Only instructors who actually have at least one session are worth
+  // printing — empty schedules waste paper.
+  const used = new Set(sessions.map(s => normInstr(s.instr)).filter(Boolean));
+  const names = instructorOptions().filter(n => used.has(normInstr(n))).sort();
+  if (names.length === 0) { toast(t('no_instr_sessions'), 'warn'); return; }
+
+  const slots = allSlotsSorted();
+  const days = ['U', 'M', 'T', 'W', 'R'];
+  const dayLbl = { U: 'Sun', M: 'Mon', T: 'Tue', W: 'Wed', R: 'Thu' };
+
+  const container = el('div', { id: 'printAllInstr', class: 'print-all-instr' });
+  names.forEach(name => {
+    const instrSessions = sessions.filter(s => normInstr(s.instr) === normInstr(name));
+    const byCell = new Map();
+    instrSessions.forEach(s => {
+      const k = s.day + '|' + s.slotCode;
+      if (!byCell.has(k)) byCell.set(k, []);
+      byCell.get(k).push(s);
+    });
+
+    const page = el('div', { class: 'instr-page' });
+    page.appendChild(el('h2', { class: 'instr-page-title' }, name));
+    page.appendChild(el('div', { class: 'instr-page-meta' },
+      `${instrSessions.length} session${instrSessions.length === 1 ? '' : 's'} · ${new Date().toISOString().slice(0, 10)}`,
+    ));
+
+    const tbl = el('div', { class: 'grid-table' });
+    const head = el('div', { class: 'grid-row' });
+    head.appendChild(el('div', { class: 'grid-cell head' }, ''));
+    days.forEach(d => head.appendChild(el('div', { class: 'grid-cell head' }, `${dayLbl[d]} (${d})`)));
+    tbl.appendChild(head);
+
+    slots.forEach(slot => {
+      const row = el('div', { class: 'grid-row' });
+      const tcell = el('div', { class: 'grid-cell time' });
+      tcell.appendChild(el('div', { class: 'mono' }, slot.code));
+      tcell.appendChild(el('div', { style: 'font-size:9px; opacity:.7;' }, slot.kind));
+      row.appendChild(tcell);
+
+      days.forEach(day => {
+        const cs = byCell.get(day + '|' + slot.code) || [];
+        if (cs.length === 0) {
+          row.appendChild(el('div', { class: 'grid-cell free' }, ''));
+        } else {
+          const cell = el('div', { class: 'grid-cell busy' });
+          cs.forEach(s => {
+            const lvName = (State.levels.find(l => l.id === s.levelId) || {}).name || '';
+            cell.appendChild(el('div', { class: 'grid-session' },
+              el('div', { class: 'grid-session-code' }, `${s.code || '?'} · B${s.blockIdx + 1}`),
+              el('div', { class: 'grid-session-sub' },
+                `${lvName}${s.room ? ' · ' + s.room : ''}`),
+            ));
+          });
+          row.appendChild(cell);
+        }
+      });
+      tbl.appendChild(row);
+    });
+    page.appendChild(tbl);
+    container.appendChild(page);
+  });
+
+  document.body.appendChild(container);
+  document.body.classList.add('printing-all-instr');
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-all-instr');
+      container.remove();
+    }, 100);
+  }, 50);
+}
+
 function exportXlsx() {
   const tplEl = document.getElementById('xlsx-template-data');
   if (!tplEl) { toast('Template missing', 'bad'); return; }
@@ -4456,6 +4580,10 @@ function init() {
       if (isDirty()) { toast(t('blocked_print'), 'warn'); printMenu.classList.remove('open'); return; }
       const mode = b.getAttribute('data-print');
       printMenu.classList.remove('open');
+      if (mode === 'all-instr') {
+        printAllInstructorSchedules();
+        return;
+      }
       if (mode === 'grid') setTab('grid');
       // Defer to next tick so the panel switch settles before print dialog
       setTimeout(() => window.print(), 50);

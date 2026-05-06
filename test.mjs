@@ -598,7 +598,7 @@ const opened = await page.evaluate(() =>
   document.getElementById('printMenu').classList.contains('open'));
 check('print menu opens when not dirty', opened);
 const items = await page.locator('#printMenu .menu-item').count();
-check('print menu has 2 items (active + grid)', items === 2);
+check('print menu has 3 items (active + grid + all-instr)', items === 3);
 
 console.log('\n══ 31. SETTINGS: edit day pattern → reflected in dropdown ══');
 await page.evaluate(() => localStorage.clear());
@@ -1689,6 +1689,50 @@ const titleAfterClear = await page.locator('#panel-grid .panel-title').textConte
 check('[IT4] title returns to plain "Weekly grid" after clear',
   /Weekly grid/.test(titleAfterClear) && !/محمد/.test(titleAfterClear),
   titleAfterClear);
+
+console.log('\n══ INSTRUCTORS row → schedule + print all ══');
+
+// IS1: Seed two instructors with sessions
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'Level 3' }],
+    rows: [
+      { id: 'r1', levelId: 'L1', code: 'A', name: 'A', type: 'lecture', credits: 3, days: 'M',
+        blocks: [{ id: 'b1', time: '0800-0920', instr: 'Dr. Alpha', room: 'R1', days: '', type: '' }] },
+      { id: 'r2', levelId: 'L1', code: 'B', name: 'B', type: 'lecture', credits: 3, days: 'W',
+        blocks: [{ id: 'b2', time: '0930-1050', instr: 'Dr. Beta', room: 'R2', days: '', type: '' }] },
+    ],
+    instructors: [{ name: 'Dr. Alpha', minLoad: 12 }, { name: 'Dr. Beta', minLoad: 12 }],
+    lang: 'en', dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await page.click('.tab:has-text("Instructors")');
+await settle();
+
+// IS1: Each instructor row has a Schedule (📅) button
+const scheduleBtns = await page.locator('#panel-instructors button:has-text("Schedule")').count();
+check('[IS1] each instructor row has a Schedule button',
+  scheduleBtns === 2, `count=${scheduleBtns}`);
+
+// IS2: Click → switches to Grid pre-filtered
+await page.locator('#panel-instructors tr:has-text("Dr. Alpha") button:has-text("Schedule")').click();
+await settle();
+check('[IS2] click navigates to Grid panel',
+  await page.isVisible('#panel-grid.active'));
+const fInstrValIS = await page.evaluate(() => document.getElementById('fInstr').value);
+check('[IS3] Grid is pre-filtered for the chosen instructor',
+  fInstrValIS === 'Dr. Alpha', `got=${fInstrValIS}`);
+
+// IS4: Print menu has the new "Print all instructor schedules" item
+await page.click('.tab:has-text("Versions")'); await settle();
+await page.fill('.snapshot-form input', 'is4');
+await page.click('.snapshot-form button:has-text("Save snapshot")'); await settle();
+await page.click('#btnPrint');
+const allItems = await page.locator('#printMenu .menu-item').allTextContents();
+check('[IS4] print menu lists "Print all instructor schedules"',
+  allItems.some(t => /Print all instructor/i.test(t)), allItems.join('|'));
 
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
