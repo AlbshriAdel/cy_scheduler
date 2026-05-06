@@ -4321,6 +4321,39 @@ function normalizeType(raw) {
   return 'lecture'; // 'نظري', 'lecture', 'theory'
 }
 
+// Coerce a time-cell value into the canonical 'HHMM-HHMM' slot code
+// regardless of how the spreadsheet stored it. Excel happily mangles
+// times typed by users:
+//   '0800-0920'        ← already canonical
+//   '08:00-09:20'      ← user-typed with colons
+//   '8:00 - 9:20'      ← spaces + single-digit hours
+//   '8:00-9:20'        ← single-digit hours both sides
+//   '800-920'          ← leading zeros stripped
+//   '0800–0920'        ← en-dash from autocorrect
+//   ' 0800-0920 '      ← whitespace
+// All of the above resolve to '0800-0920' so findSlot() recognises
+// them. Empty / unrecognised values pass through unchanged so the
+// user sees what was in the file.
+function parseTimeCell(raw) {
+  if (raw == null || raw === '') return '';
+  let s = raw.toString()
+    .replace(/[–—]/g, '-')   // en-/em-dash → hyphen
+    .replace(/‏|‎/g, '')
+    .replace(/\s+/g, '')
+    .trim();
+  if (!s) return '';
+  // HHMM-HHMM with optional colons and 1- or 2-digit hours each side.
+  const m = s.match(/^(\d{1,2}):?(\d{2})-(\d{1,2}):?(\d{2})$/);
+  if (m) {
+    const pad2 = (x) => String(x).padStart(2, '0');
+    return `${pad2(m[1])}${pad2(m[2])}-${pad2(m[3])}${pad2(m[4])}`;
+  }
+  // 4-digit / 3-digit start only (no end) — pad and return raw.
+  const numOnly = s.match(/^(\d{1,4})$/);
+  if (numOnly) return s.padStart(4, '0');
+  return s;
+}
+
 // Convert XLSX rows (matching the Course_Schedule_Template layout) into
 // the wide-format objects csvToState expects. The template ships with:
 //   row 1: title         row 2: blank        row 3: BLOCK 1 / BLOCK 2
@@ -4345,18 +4378,20 @@ function xlsxRowsToWideItems(rows) {
       name:  (r[2] || '').toString(),
       type:  normalizeType(r[3]),
       credits: r[4] || 0,
-      days:  (r[5] || '').toString(),
-      block1_time:  (r[6]  || '').toString(),
+      days:  (r[5] || '').toString().trim(),
+      // Time cells get parseTimeCell() so colon / dash / leading-zero
+      // variants typed in Excel still resolve to a known slot code.
+      block1_time:  parseTimeCell(r[6]),
       block1_instr: (r[7]  || '').toString(),
-      block1_room:  (r[8]  || '').toString(),
-      block2_time:  (r[9]  || '').toString(),
+      block1_room:  (r[8]  || '').toString().trim(),
+      block2_time:  parseTimeCell(r[9]),
       block2_instr: (r[10] || '').toString(),
-      block2_room:  (r[11] || '').toString(),
+      block2_room:  (r[11] || '').toString().trim(),
       // Round-trip metadata (columns M–P). Empty means inherit.
       block1_type:  r[12] ? normalizeType(r[12]) : '',
-      block1_days:  (r[13] || '').toString(),
+      block1_days:  (r[13] || '').toString().trim(),
       block2_type:  r[14] ? normalizeType(r[14]) : '',
-      block2_days:  (r[15] || '').toString(),
+      block2_days:  (r[15] || '').toString().trim(),
     });
   }
   return items;
@@ -4419,6 +4454,11 @@ function importFile(file) {
           const obj = {};
           headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
           if (obj.type) obj.type = normalizeType(obj.type);
+          // Coerce time-like fields so colon / leading-zero variants
+          // still match defined slot codes.
+          ['time', 'block1_time', 'block2_time'].forEach(k => {
+            if (obj[k]) obj[k] = parseTimeCell(obj[k]);
+          });
           return obj;
         });
         ({ levels, rows, instructors } = csvToState(items));

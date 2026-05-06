@@ -1800,6 +1800,77 @@ const r6Now = await page.locator('.issue:has-text("R6")').count();
 check('[PT-INSTR4] R6 fires across punctuation variants when day matches',
   r6Now >= 1, `R6 count=${r6Now}`);
 
+console.log('\n══ TIME-CELL coercion on import (colon / dash / leading zeros) ══');
+
+// TC1: CSV with mixed time-cell variants. Each row should produce a
+// time that resolves to the canonical slot code on import.
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+const tcCSV =
+  'level,code,name,type,credits,days,time,instr,room\n' +
+  'L1,X,A,lecture,3,M,"08:00-09:20",Dr. K,R1\n' +     // colons
+  'L1,Y,B,lecture,3,M,"800-920",Dr. K,R2\n' +          // missing leading zero
+  'L1,Z,C,lecture,3,M,"0930-1050",Dr. K,R3\n' +        // already canonical
+  'L1,W,D,lecture,3,M,"08:00 - 09:20",Dr. K,R4\n';     // spaces around dash
+const tcPath = '/tmp/cy_tc.csv';
+fs.writeFileSync(tcPath, tcCSV);
+await page.evaluate(async (b64) => {
+  const bin = atob(b64);
+  const ab = new ArrayBuffer(bin.length);
+  const u8 = new Uint8Array(ab);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const file = new File([ab], 'tc.csv', { type: 'text/csv' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const inp = document.getElementById('fileImport');
+  inp.files = dt.files;
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+}, fs.readFileSync(tcPath).toString('base64'));
+await page.waitForTimeout(1000);
+const tcSt = await readState();
+const times = tcSt.rows.map(r => r.blocks[0].time).sort();
+check('[TC1] all time variants normalised to HHMM-HHMM',
+  JSON.stringify(times) === JSON.stringify(['0800-0920','0800-0920','0800-0920','0930-1050']),
+  JSON.stringify(times));
+
+// TC2: After normalisation the slot is recognised → grid renders the
+// session as busy (or conflict, since several share the same time/inst).
+await page.click('.tab:has-text("Grid")');
+await page.waitForTimeout(500);
+const tcCells = await page.locator('#panel-grid .grid-cell.busy, #panel-grid .grid-cell.conflict').count();
+check('[TC2] grid renders sessions for normalised times',
+  tcCells >= 1, `cells=${tcCells}`);
+
+// TC3: Wide CSV with bilingual headers + colon-style times round-trips
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+const wideCSV =
+  'level,code,name,type,credits,days,block1_time,block1_instr,block1_room,block2_time,block2_instr,block2_room\n' +
+  'L1,X,A,lecture,3,"M,W","08:00-09:20",Dr. K,R1,"9:30-10:50",Dr. L,R2\n';
+fs.writeFileSync('/tmp/cy_tc_wide.csv', wideCSV);
+await page.evaluate(async (b64) => {
+  const bin = atob(b64);
+  const ab = new ArrayBuffer(bin.length);
+  const u8 = new Uint8Array(ab);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const file = new File([ab], 'wide.csv', { type: 'text/csv' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const inp = document.getElementById('fileImport');
+  inp.files = dt.files;
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+}, fs.readFileSync('/tmp/cy_tc_wide.csv').toString('base64'));
+await page.waitForTimeout(1000);
+const wideSt = await readState();
+check('[TC3] wide CSV block1_time normalised',
+  wideSt.rows[0].blocks[0].time === '0800-0920',
+  wideSt.rows[0].blocks[0].time);
+check('[TC4] wide CSV block2_time normalised',
+  wideSt.rows[0].blocks[1].time === '0930-1050',
+  wideSt.rows[0].blocks[1].time);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');
