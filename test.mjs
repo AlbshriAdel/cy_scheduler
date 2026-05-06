@@ -1636,6 +1636,60 @@ check('[BR7] storage cleared after reset',
   !stAfterReset || (stAfterReset.levels.length === 0 && stAfterReset.rows.length === 0),
   JSON.stringify(stAfterReset));
 
+console.log('\n══ INSTRUCTOR TIMETABLE — whitespace-tolerant filter ══');
+
+// IT1: Imported names with stray whitespace. The dropdown lists the
+// trimmed value; rows still carry the spacy form. Filter must match.
+await page.evaluate(() => {
+  localStorage.setItem('cy_sched_state_v3', JSON.stringify({
+    levels: [{ id: 'L1', name: 'Level 3' }],
+    rows: [
+      { id: 'r1', levelId: 'L1', code: 'C1', name: 'C1',
+        type: 'lecture', credits: 3, days: 'M,W',
+        blocks: [
+          { id: 'b1', time: '0800-0920', instr: 'د.محمد الاحمدي ', room: 'R1', days: '', type: '' },
+          { id: 'b2', time: '0930-1050', instr: ' د.محمد الاحمدي', room: 'R1', days: '', type: '' },
+        ],
+      },
+    ],
+    instructors: [], lang: 'en', dismissedConflicts: [],
+  }));
+});
+await page.reload();
+await page.waitForSelector('#panel-schedule.active');
+await settle();
+await page.click('.tab:has-text("Grid")'); await settle();
+// Dropdown should show ONE entry (deduped + trimmed)
+const opts = await page.locator('#fInstr option').allTextContents();
+const instrCount = opts.filter(o => /محمد/.test(o)).length;
+check('[IT1] dropdown deduplicates whitespace variants',
+  instrCount === 1, `count=${instrCount} opts=${JSON.stringify(opts)}`);
+
+// IT2: Filter by the trimmed name → both spacy sessions should match
+const trimmedName = opts.find(o => /محمد/.test(o));
+await page.selectOption('#fInstr', trimmedName);
+await settle();
+const busyOrConflict = await page.locator('#panel-grid .grid-cell.busy, #panel-grid .grid-cell.conflict').count();
+check('[IT2] filter matches both whitespace variants',
+  busyOrConflict >= 4, `cells=${busyOrConflict}`);
+
+// IT3: Header now shows the print-instructor button
+const printBtn = await page.locator('#panel-grid button:has-text("Print this instructor")').count();
+check('[IT3] Print-this-instructor button appears when filter active',
+  printBtn === 1);
+const clearBtn = await page.locator('#panel-grid button:has-text("Clear filter")').count();
+check('[IT3b] Clear-filter button appears when filter active',
+  clearBtn === 1);
+
+// IT4: Click clear-filter → busy cells drop to 0 (filter cleared shows
+// every level, but FREE labelling only triggers under instructor/room
+// filter; with no filter, free cells aren't labelled)
+await page.click('#panel-grid button:has-text("Clear filter")'); await settle();
+const titleAfterClear = await page.locator('#panel-grid .panel-title').textContent();
+check('[IT4] title returns to plain "Weekly grid" after clear',
+  /Weekly grid/.test(titleAfterClear) && !/محمد/.test(titleAfterClear),
+  titleAfterClear);
+
 console.log('\n════════════════════════════════════');
 console.log(`  RESULTS: ${pass} passed, ${fail} failed`);
 console.log('════════════════════════════════════');

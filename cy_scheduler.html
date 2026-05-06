@@ -979,6 +979,9 @@ const I18N = {
     bulk_add_help: 'One section per line. Tab- or comma-separated: code, name, type, credits, days. Type = lecture / lab / online.',
     bulk_add_added: 'Added {n} section(s)',
     print_grid: 'Print grid',
+    print_instr: 'Print this instructor\'s schedule',
+    print_instr_tip: 'Print just the filtered weekly view for this instructor',
+    clear_filter: 'Clear filter',
     empty_schedule_title: 'No levels yet',
     empty_schedule_sub: 'Start by adding an academic level.',
     empty_level_sub: 'No sections in this level yet.',
@@ -1107,6 +1110,9 @@ const I18N = {
     bulk_add_help: 'سطر لكل شعبة. مفصول بفاصلة أو tab: الرمز، الاسم، النوع، الساعات، الأيام. النوع = lecture / lab / online.',
     bulk_add_added: 'تم إضافة {n} شعبة',
     print_grid: 'طباعة الشبكة',
+    print_instr: 'طباعة جدول هذا المدرس',
+    print_instr_tip: 'طباعة عرض الأسبوع المُصفّى لهذا المدرس',
+    clear_filter: 'مسح المُصفّي',
     empty_schedule_title: 'لا توجد مستويات بعد',
     empty_schedule_sub: 'ابدأ بإضافة مستوى أكاديمي.',
     empty_level_sub: 'لا توجد شعب في هذا المستوى بعد.',
@@ -1640,12 +1646,14 @@ function detectConflicts() {
         });
       }
       // R6: instructor double-book — only flagged when both blocks are non-online.
-      if (a.instr && a.instr === b.instr && a.type !== 'online' && b.type !== 'online') {
+      // Compare normalised forms so stray whitespace doesn't hide a clash.
+      const aN = normInstr(a.instr), bN = normInstr(b.instr);
+      if (aN && aN === bN && a.type !== 'online' && b.type !== 'online') {
         allIssues.push({
           rule: 'R6', day: a.day, a: aKey, b: bKey,
-          reason: `Instructor "${a.instr}" is double-booked.`,
-          tipA: `R6 ${a.day}: ${a.instr} also teaches ${sessionLabel(b)}`,
-          tipB: `R6 ${a.day}: ${a.instr} also teaches ${sessionLabel(a)}`,
+          reason: `Instructor "${aN}" is double-booked.`,
+          tipA: `R6 ${a.day}: ${aN} also teaches ${sessionLabel(b)}`,
+          tipB: `R6 ${a.day}: ${aN} also teaches ${sessionLabel(a)}`,
         });
       }
       // R7: room double-book — non-online only.
@@ -1856,12 +1864,28 @@ function renderPanelHeader({ title, sub, actions }) {
 // SCHEDULE
 // ====================================================================
 
+// Whitespace-tolerant key for matching instructor names. Imported XLSX
+// values can carry trailing/leading spaces, double spaces, or zero-width
+// joiner characters that break strict equality.
+function normInstr(s) {
+  return (s || '').toString()
+    .replace(/[​-‏‪-‮⁠﻿]/g, '') // zero-width / bidi
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function instructorOptions() {
-  const names = State.instructors.map(i => i.name);
-  State.rows.forEach(r => r.blocks.forEach(b => {
-    if (b.instr && !names.includes(b.instr)) names.push(b.instr);
-  }));
-  return names;
+  // Collect unique normalised names; also dedupe so two near-identical
+  // imported names ('Dr. K' vs 'Dr. K ') don't both appear.
+  const seen = new Set();
+  const out = [];
+  const add = (n) => {
+    const k = normInstr(n);
+    if (k && !seen.has(k)) { seen.add(k); out.push(k); }
+  };
+  State.instructors.forEach(i => add(i.name));
+  State.rows.forEach(r => r.blocks.forEach(b => add(b.instr)));
+  return out;
 }
 
 function renderSchedule() {
@@ -2609,13 +2633,41 @@ function uniqueRooms() {
 function renderGrid() {
   const panel = document.getElementById('panel-grid');
   clear(panel);
-  panel.appendChild(renderPanelHeader({
-    title: t('grid_title'), sub: t('grid_sub'),
-  }));
 
   // Filter bar
   const filters = State.gridFilters;
   const instrs = instructorOptions().sort();
+
+  // Header: title + (when an instructor is filtered) a quick Print
+  // button so you can hand a hard copy to the faculty member.
+  const actions = [];
+  if (filters.instr) {
+    actions.push(el('button', {
+      class: 'btn',
+      title: t('print_instr_tip'),
+      onclick: () => {
+        if (isDirty()) { toast(t('blocked_print'), 'warn'); return; }
+        // Print only the Grid panel, which is already filtered.
+        setTab('grid');
+        setTimeout(() => window.print(), 50);
+      },
+    }, t('print_instr')));
+    actions.push(el('button', {
+      class: 'btn btn-ghost btn-sm',
+      title: t('clear_filter'),
+      onclick: () => {
+        State.gridFilters = { instr: '', level: '', room: '', type: '' };
+        renderGrid();
+      },
+    }, t('clear_filter')));
+  }
+  panel.appendChild(renderPanelHeader({
+    title: filters.instr
+      ? `${t('grid_title')} — ${filters.instr}`
+      : t('grid_title'),
+    sub: t('grid_sub'),
+    actions,
+  }));
   const levels = State.levels.map(l => l.name).filter(Boolean);
   const rooms = uniqueRooms();
   const types = TYPES.map(x => x.code);
@@ -2658,12 +2710,14 @@ function renderGrid() {
   const slotsAll = allSlotsSorted();
 
   const matches = (s) => {
-    if (filters.instr && s.instr !== filters.instr) return false;
+    // Whitespace-tolerant match for instructor (imported names often
+    // carry stray spaces or zero-width chars).
+    if (filters.instr && normInstr(s.instr) !== normInstr(filters.instr)) return false;
     if (filters.level) {
       const lv = State.levels.find(l => l.id === s.levelId);
-      if (!lv || lv.name !== filters.level) return false;
+      if (!lv || lv.name.trim() !== filters.level.trim()) return false;
     }
-    if (filters.room && s.room !== filters.room) return false;
+    if (filters.room && (s.room || '').trim() !== filters.room.trim()) return false;
     if (filters.type && s.type !== filters.type) return false;
     return true;
   };
